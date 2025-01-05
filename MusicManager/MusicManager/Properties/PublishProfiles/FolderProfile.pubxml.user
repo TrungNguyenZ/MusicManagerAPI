@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+https://go.microsoft.com/fwlink/?LinkID=208121.
+-->
+<Project>
+  <PropertyGroup>
+    <_PublishTargetUrl>E:\MusicProject\MusicManager\MusicManager\bin\Release\net6.0\publish\</_PublishTargetUrl>
+    <History>True|2025-01-05T07:25:35.1259803Z;True|2025-01-05T14:19:27.1977903+07:00;True|2025-01-05T10:30:22.8883346+07:00;True|2025-01-05T09:11:22.5405577+07:00;True|2025-01-04T22:18:53.7050262+07:00;True|2025-01-04T21:21:57.6490273+07:00;</History>
+    <LastFailureDetails />
+  </PropertyGroup>
+</Project>
