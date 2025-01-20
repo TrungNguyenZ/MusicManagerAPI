@@ -16,10 +16,13 @@ namespace MusicManager
         public DbSet<CountryPercentModel> CountryPercentModel { get; set; }
         public DbSet<StatisticYoutubeModel> StatisticYoutubeModel { get; set; }
         public DbSet<StatisticPriceNameModel> StatisticPriceNameModel { get; set; }
-        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+        public DbSet<TopChartArtist> TopChartArtist { get; set; }
+        public DbSet<TopChartTrack> TopChartTrack { get; set; }
 
         public DbSet<Product> Products { get; set; }
         public DbSet<DataModel> DataModels { get; set; }
+        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<StatisticTotalModel>().HasNoKey();
@@ -31,6 +34,8 @@ namespace MusicManager
             modelBuilder.Entity<CountryPercentModel>().HasNoKey();
             modelBuilder.Entity<StatisticYoutubeModel>().HasNoKey();
             modelBuilder.Entity<StatisticPriceNameModel>().HasNoKey();
+            modelBuilder.Entity<TopChartArtist>().HasNoKey();
+            modelBuilder.Entity<TopChartTrack>().HasNoKey();
             base.OnModelCreating(modelBuilder); 
 
         }

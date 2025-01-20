@@ -18,7 +18,7 @@ namespace MusicManager.Repositories
         {
             var result = await _context.StatisticTotalModels
                 .FromSqlRaw("EXEC SP_netIncome_total @quarter = {0}, @quarterYear = {1}", quarter, quarterYear)
-                .ToListAsync(); 
+                .ToListAsync();
 
             return result.FirstOrDefault();
         }
@@ -48,7 +48,7 @@ namespace MusicManager.Repositories
         public async Task<List<DigitalQuarterPercentModel>> Digital_Quarter_Percent_Singer(int quarter, int quarterYear, string artisName)
         {
             var result = await _context.DigitalQuarterPercentModel
-                .FromSqlRaw("EXEC SP_statistic_digitalService_quarter_percent_singer @quarterYear = {0}, @quarter = {1} , @artistName = {2}", quarterYear, quarter , artisName)
+                .FromSqlRaw("EXEC SP_statistic_digitalService_quarter_percent_singer @quarterYear = {0}, @quarter = {1} , @artistName = {2}", quarterYear, quarter, artisName)
                 .ToListAsync();
             return result;
         }
@@ -59,10 +59,10 @@ namespace MusicManager.Repositories
                 .ToListAsync();
             return result;
         }
-        public async Task<List<DigitalYearPercentModel>> Digital_Year_Percent_Singer(int quarterYear, string artisName)
+        public async Task<List<DigitalYearPercentModel>> Digital_Year_Percent_Singer(int quarterYear, string artistName)
         {
             var result = await _context.DigitalYearPercentModel
-                .FromSqlRaw("EXEC SP_statistic_digitalService_year_percent_singer @quarterYear = {0}", quarterYear, artisName)
+                .FromSqlRaw("EXEC SP_statistic_digitalService_year_percent_singer @quarterYear = {0}, @artistName = {1}", quarterYear, artistName)
                 .ToListAsync();
             return result;
         }
@@ -80,24 +80,24 @@ namespace MusicManager.Repositories
                 .ToListAsync();
             return result;
         }
-        public async Task<List<DigitalQuarterSumModel>> Digital_Quarter_Sum_Singer(int year, string artisName)
+        public async Task<List<DigitalQuarterSumModel>> Digital_Quarter_Sum_Singer(int year, string artistName)
         {
             var result = await _context.DigitalQuarterSumModel
-                .FromSqlRaw("EXEC SP_statistic_digitalService_quarter_sum_singer @year = {0} , @artistName = {1}", year, artisName)
+                .FromSqlRaw("EXEC SP_statistic_digitalService_quarter_sum_singer @year = {0} , @artistName = {1}", year, artistName)
                 .ToListAsync();
             return result;
         }
-        public async Task<List<DigitalYearSumModel>>Digital_Year_Sum()
+        public async Task<List<DigitalYearSumModel>> Digital_Year_Sum()
         {
             var result = await _context.DigitalYearSumModel
                 .FromSqlRaw("EXEC SP_statistic_digitalService_year_sum")
                 .ToListAsync();
             return result;
         }
-        public async Task<List<DigitalYearSumModel>> Digital_Year_Sum_Singer(string artisName)
+        public async Task<List<DigitalYearSumModel>> Digital_Year_Sum_Singer(string artistName)
         {
             var result = await _context.DigitalYearSumModel
-                .FromSqlRaw("EXEC SP_statistic_digitalService_year_sum_singer @artistName = {0}", artisName)
+                .FromSqlRaw("EXEC SP_statistic_digitalService_year_sum_singer @artistName = {0}", artistName)
                 .ToListAsync();
             return result;
         }
@@ -108,10 +108,10 @@ namespace MusicManager.Repositories
                 .ToListAsync();
             return result;
         }
-        public async Task<List<CountryPercentModel>> Country_Quarter_Percent_Singer(int quarter, int quarterYear, string artisName)
+        public async Task<List<CountryPercentModel>> Country_Quarter_Percent_Singer(int quarter, int quarterYear, string artistName)
         {
             var result = await _context.CountryPercentModel
-                .FromSqlRaw("EXEC SP_statistic_country_quarter_percent_singer @quarterYear = {0} , @quarter = {1} , @artisName = {2}", quarterYear, quarter, artisName)
+                .FromSqlRaw("EXEC SP_statistic_country_quarter_percent_singer @quarterYear = {0} , @quarter = {1} , @artistName = {2}", quarterYear, quarter, artistName)
                 .ToListAsync();
             return result;
         }
@@ -123,13 +123,13 @@ namespace MusicManager.Repositories
                 .ToListAsync();
             return result;
         }
-        public async Task<List<CountryPercentModel>> Country_Year_Percent_Singer(int quarteryear, string artisName)
+        public async Task<List<CountryPercentModel>> Country_Year_Percent_Singer(int quarteryear, string artistName)
         {
             var result = await _context.CountryPercentModel
-                .FromSqlRaw("EXEC SP_statistic_country_year_percent_singer @quarterYear = {0} , @artistName = {1}", quarteryear, artisName)
+                .FromSqlRaw("EXEC SP_statistic_country_year_percent_singer @quarterYear = {0} , @artistName = {1}", quarteryear, artistName)
                 .ToListAsync();
             return result;
-        }   
+        }
         public async Task<List<StatisticYoutubeModel>> YoutubeQuarter(int quarteryear, int quarter)
         {
             var result = await _context.StatisticYoutubeModel
@@ -185,6 +185,111 @@ namespace MusicManager.Repositories
                 .FromSqlRaw("EXEC SP_statistic_priceName_quarter_pecent_singer @quarterYear = {0} , @quarter = {1}, @artistName = {2}", quarteryear, quarter, artistName)
                 .ToListAsync();
             return result;
+        }
+
+        public async Task<Statistic> TopCountryQuarter(int quarter, int year)
+        {
+            var res = await _context.DataModels.Where(x=>x.quarter == quarter && x.quarterYear == year).GroupBy(x => x.countryDescription).Select(item => new Statistic
+            {
+                name = item.Key,
+                sum = (long)item.Sum(x=>x.netIncome)
+            }).OrderByDescending(x => x.sum).FirstOrDefaultAsync() ;
+
+            return res;
+        }     
+        public async Task<Statistic> TopCountryQuarter_Singer(int quarter, int year,string artistName)
+        {
+            var res = await _context.DataModels.Where(x=> x.quarter == quarter && x.year == year && x.artistName == artistName).GroupBy(x => x.countryDescription).Select(item => new Statistic
+            {
+                name = item.Key,
+                sum = (long)item.Sum(x=>x.netIncome)
+            }).OrderByDescending(x => x.sum).FirstOrDefaultAsync() ;
+
+            return res;
+        }
+        public async Task<Statistic> TopCountryYear(int year)
+        {
+            var res = await _context.DataModels.Where(x =>x.quarterYear == year).GroupBy(x => x.countryDescription).Select(item => new Statistic
+            {
+                name = item.Key,
+                sum = (long)item.Sum(x => x.netIncome)
+            }).OrderByDescending(x => x.sum).FirstOrDefaultAsync();
+
+            return res;
+        }
+        public async Task<Statistic> TopCountryYear_Singer(int year, string artistName)
+        {
+            var res = await _context.DataModels.Where(x =>x.year == year && x.artistName == artistName).GroupBy(x => x.countryDescription).Select(item => new Statistic
+            {
+                name = item.Key,
+                sum = (long)item.Sum(x => x.netIncome)
+            }).OrderByDescending(x => x.sum).FirstOrDefaultAsync();
+
+            return res;
+        }
+        public async Task<Statistic> TopDigitalQuarter(int quarter, int year)
+        {
+            var res = await _context.DataModels.Where(x => x.quarter == quarter && x.quarterYear == year).GroupBy(x => x.digitalServiceProvider).Select(item => new Statistic
+            {
+                name = item.Key,
+                sum = (long)item.Sum(x => x.netIncome)
+            }).OrderByDescending(x=>x.sum).FirstOrDefaultAsync();
+
+            return res;
+        }
+        public async Task<Statistic> TopDigitalQuarter_Singer(int quarter, int year, string artistName)
+        {
+            var res = await _context.DataModels.Where(x => x.quarter == quarter && x.quarterYear == year && x.artistName == artistName).GroupBy(x => x.digitalServiceProvider).Select(item => new Statistic
+            {
+                name = item.Key,
+                sum = (long)item.Sum(x => x.netIncome)
+            }).OrderByDescending(x => x.sum).FirstOrDefaultAsync();
+
+            return res;
+        }
+        public async Task<Statistic> TopDigitalYear(int year)
+        {
+            var res = await _context.DataModels.Where(x => x.quarterYear == year).GroupBy(x => x.digitalServiceProvider).Select(item => new Statistic
+            {
+                name = item.Key,
+                sum = (long)item.Sum(x => x.netIncome)
+            }).OrderByDescending(x => x.sum).FirstOrDefaultAsync();
+
+            return res;
+        }
+        public async Task<Statistic> TopDigitalYear_Singer(int year, string artistName)
+        {
+            var res = await _context.DataModels.Where(x =>x.quarterYear == year && x.artistName == artistName).GroupBy(x => x.digitalServiceProvider).Select(item => new Statistic
+            {
+                name = item.Key,
+                sum = (long)item.Sum(x => x.netIncome)
+            }).OrderByDescending(x => x.sum).FirstOrDefaultAsync();
+
+            return res;
+        }
+        public async Task<int> DigitalCountQuarter(int quarter, int year)
+        {
+            var res = await _context.DataModels.Where(x => x.quarter == quarter && x.quarterYear == year).Select(x=>x.digitalServiceProvider).Distinct().CountAsync();
+
+            return res;
+        }
+        public async Task<int> DigitalCountQuarter_Singer(int quarter, int year, string artistName)
+        {
+            var res = await _context.DataModels.Where(x => x.quarter == quarter && x.quarterYear == year && x.artistName == artistName).Select(x => x.digitalServiceProvider).Distinct().CountAsync();
+
+            return res;
+        }
+        public async Task<int> DigitalCountYear(int year)
+        {
+            var res = await _context.DataModels.Where(x =>x.quarterYear == year).Select(x => x.digitalServiceProvider).Distinct().CountAsync();
+
+            return res;
+        }
+        public async Task<int> DigitalCountYear_Singer(int year, string artistName)
+        {
+            var res = await _context.DataModels.Where(x => x.quarterYear == year && x.artistName == artistName).Select(x => x.digitalServiceProvider).Distinct().CountAsync();
+
+            return res;
         }
     }
 }

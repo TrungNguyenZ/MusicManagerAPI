@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using MusicManager.Models;
 using MusicManager.Models.Base;
 using MusicManager.Services;
@@ -7,7 +8,7 @@ using MusicManager.Services;
 namespace MusicManager.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("[controller]")]
     public class UserController : ControllerBase
     {
         private readonly UserManager<ApplicationUser> _userManager;
@@ -33,12 +34,12 @@ namespace MusicManager.Controllers
                 res.message = "Tài khoản đăng nhập không đúng!";
                 return Ok(res);
             }
-            if (!user.Active)
-            {
-                res.code = 402;
-                res.message = "Tài khoản của bạn chưa được kích hoạt!";
-                return Ok(res);
-            }
+            //if (!user.Active)
+            //{
+            //    res.code = 402;
+            //    res.message = "Tài khoản của bạn chưa được kích hoạt!";
+            //    return Ok(res);
+            //}
             if (user != null && await _userManager.CheckPasswordAsync(user, request.Password))
             {
                 var accessToken = await _tokenService.GenerateAccessToken(user);
@@ -46,7 +47,7 @@ namespace MusicManager.Controllers
 
                 // Lưu refresh token trong bộ nhớ
                 RefreshTokens[user.UserName] = refreshToken;
-                res.data = new ResponseToken { AccessToken = accessToken, RefreshToken = refreshToken };
+                res.data = new ResponseToken { AccessToken = accessToken, RefreshToken = refreshToken, FullName = user.Name, IsAdmin = user.IsAdmin };
                 return Ok(res);
             }
             res.code = 401;
@@ -55,7 +56,7 @@ namespace MusicManager.Controllers
         }
 
         [HttpPost("refresh-token")]
-        public IActionResult RefreshToken([FromBody] RefreshTokenRequest request)
+        public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
         {
             var principal = _tokenService.GetPrincipalFromExpiredToken(request.AccessToken);
             var username = principal.Identity.Name;
@@ -64,15 +65,15 @@ namespace MusicManager.Controllers
             {
                 return Unauthorized();
             }
-
-            var newAccessToken = _tokenService.GenerateAccessToken(new ApplicationUser { UserName = username }).Result;
+            var userData = await _userManager.FindByNameAsync(username);
+            var newAccessToken = _tokenService.GenerateAccessToken(userData).Result;
             var newRefreshToken = _tokenService.GenerateRefreshToken();
 
             // Cập nhật refresh token
             RefreshTokens[username] = newRefreshToken;
             var res = new ResponseData<ResponseToken>()
             {
-                data = new ResponseToken { AccessToken = newAccessToken, RefreshToken = newRefreshToken }
+                data = new ResponseToken { AccessToken = newAccessToken, RefreshToken = newRefreshToken, FullName = userData.Name, IsAdmin = userData.IsAdmin }
             };
             return Ok(res);
         }
@@ -88,16 +89,16 @@ namespace MusicManager.Controllers
                 res.message = "Tài khoản đã tồn tại!";
                 return Ok(res);
             }
-            var user = new ApplicationUser
-            {
+            var input = new ApplicationUser {
                 UserName = model.Username,
+                PhoneNumber = model.Phone,
                 Email = model.Email,
-                IsAdmin = model.IsAdmin,
                 ArtistName = model.ArtistName,
+                Name = model.Name,
                 RevenuePercentage = model.RevenuePercentage,
-                Name= model.FullName
+                IsAdmin = model.IsAdmin,
             };
-            var result = await _userManager.CreateAsync(user, model.Password);
+            var result = await _userManager.CreateAsync(input, model.Password);
             if (result.Succeeded)
             {
                 res.message = "Tạo tài khoản thành công!";
@@ -113,11 +114,11 @@ namespace MusicManager.Controllers
         }
 
         // API sửa tài khoản
-        [HttpPut("update/{id}")]
-        public async Task<IActionResult> UpdateUser(string id, [FromBody] UpdateUserRequest model)
+        [HttpPost("update")]
+        public async Task<IActionResult> UpdateUser([FromBody] UpdateUserRequest model)
         {
             var res = new ResponseBase();
-            var user = await _userManager.FindByIdAsync(id);
+            var user = await _userManager.FindByIdAsync(model.Id);
             if (user == null)
             {
                 res.code = 410;
@@ -173,7 +174,7 @@ namespace MusicManager.Controllers
         }
 
         // API xóa tài khoản
-        [HttpDelete("delete/{id}")]
+        [HttpGet("delete")]
         public async Task<IActionResult> DeleteUser(string id)
         {
             var res = new ResponseBase();
@@ -198,6 +199,67 @@ namespace MusicManager.Controllers
                 res.isSuccess = false;
                 return Ok(res);
             }
+        }
+        [HttpGet("getList")]
+        public async Task<IActionResult> GetList()
+        {
+            var res = new ResponseData<List<ApplicationUser>>()
+            {
+                data = _userManager.Users.OrderByDescending(x=>x.Id).ToList()
+            };
+            return Ok(res);
+        }
+        [HttpPost("ChangePasword")]
+        public async Task<IActionResult> ChangePasword(ChangePassword input)
+        {
+            var res = new ResponseBase();
+            var user = await _userManager.FindByIdAsync(input.Id);
+            if (user == null)
+            {
+                res.code = 410;
+                res.message = "Tài khoản không tồn tại!";
+                return Ok(res);
+            }
+            var result = await _userManager.ChangePasswordAsync(user, input.OldPassword, input.NewPassword);
+            if (!result.Succeeded)
+            {
+                res.code = 411;
+                res.message = "Mật khẩu không chính xác!";
+                return Ok(res);
+            }
+            else
+            {
+                res.message = "Đổi mật khẩu thành công!";
+            }
+            return Ok(res);
+        }
+        [HttpPost("ResetPassword")]
+        public async Task<IActionResult> ResetPassword(ResetPassword input)
+        {
+            var res = new ResponseBase();
+            var user = await _userManager.FindByIdAsync(input.Id);
+            if (user == null)
+            {
+                res.code = 410;
+                res.message = "Tài khoản không tồn tại!";
+                return Ok(res);
+            }
+
+            // Tạo token đặt lại mật khẩu
+            var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
+
+            // Đặt lại mật khẩu
+            var result = await _userManager.ResetPasswordAsync(user, resetToken, input.NewPassword);
+            if (!result.Succeeded)
+            {
+                res.code = 411;
+                res.message = "Đặt lại mật khẩu thất bại!";
+                return Ok(res);
+            }
+
+            res.code = 200;
+            res.message = "Đặt lại mật khẩu thành công!";
+            return Ok(res);
         }
     }
 

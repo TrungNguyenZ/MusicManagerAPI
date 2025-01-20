@@ -29,6 +29,18 @@ namespace MusicManager.Repositories
         Task<List<StatisticPriceNameModel>> PriceYear_Singer(int quarteryear, string artistName);
         Task<List<StatisticPriceNameModel>> PriceQuarter(int quarteryear, int quarter);
         Task<List<StatisticPriceNameModel>> PriceQuarter_Singer(int quarteryear, int quarter, string artistName);
+        Task<Statistic> TopCountryQuarter(int quarter, int year);
+        Task<Statistic> TopCountryQuarter_Singer(int quarter, int year, string artistName);
+        Task<Statistic> TopCountryYear(int year);
+        Task<Statistic> TopCountryYear_Singer(int year, string artistName);
+        Task<Statistic> TopDigitalQuarter(int quarter, int year);
+        Task<Statistic> TopDigitalQuarter_Singer(int quarter, int year, string artistName);
+        Task<Statistic> TopDigitalYear(int year);
+        Task<Statistic> TopDigitalYear_Singer(int year, string artistName);
+        Task<int> DigitalCountQuarter(int quarter, int year);
+        Task<int> DigitalCountQuarter_Singer(int quarter, int year, string artistName);
+        Task<int> DigitalCountYear(int year);
+        Task<int> DigitalCountYear_Singer(int year, string artistName);
 
     }
 }

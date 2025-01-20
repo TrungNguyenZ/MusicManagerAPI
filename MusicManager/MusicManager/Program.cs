@@ -9,8 +9,20 @@ using MusicManager.Repositories;
 using MusicManager.Services;
 using MusicManager.Models;
 using MusicManager.Repositories.Data;
+using MusicManager.Services.TopChart;
+using OfficeOpenXml;
 
 var builder = WebApplication.CreateBuilder(args);
+ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowSpecificOrigin", policy =>
+    {
+        policy.WithOrigins("*") // Thay thế bằng URL frontend
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
 
 // Add services to the container.
 
@@ -18,7 +30,15 @@ builder.Services.AddControllers();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 // Cấu hình Identity
-builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+{
+    // Tắt các yêu cầu mật khẩu phức tạp
+    options.Password.RequireDigit = false;           // Không yêu cầu số
+    options.Password.RequiredLength = 1;            // Độ dài tối thiểu
+    options.Password.RequireLowercase = false;      // Không yêu cầu chữ thường
+    options.Password.RequireUppercase = false;      // Không yêu cầu chữ hoa
+    options.Password.RequireNonAlphanumeric = false; // Không yêu cầu ký tự đặc biệt
+})
     .AddEntityFrameworkStores<AppDbContext>()
     .AddDefaultTokenProviders();
 
@@ -77,14 +97,21 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.AddAutoMapper(typeof(Program));
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped<IStatisticRepository, StatisticRepository>();
+builder.Services.AddScoped<ITopChartRepository, TopChartRepository>();
+builder.Services.AddScoped<IDataRepository, DataRepository>();
+
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IDataService, DataService>();
 builder.Services.AddScoped<ICommonService, CommonService>();
 builder.Services.AddScoped<IStatisticService, StatisticService>();
+builder.Services.AddScoped<ITopChartService, TopChartService>();
 var app = builder.Build();
 
-
+app.UseCors(x => x
+            .AllowAnyOrigin()
+            .AllowAnyMethod()
+            .AllowAnyHeader());
 app.UseSwagger();
 app.UseSwaggerUI(options =>
 {
