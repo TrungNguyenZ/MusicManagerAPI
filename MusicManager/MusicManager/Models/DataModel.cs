@@ -29,5 +29,7 @@ namespace MusicManager.Models
         public decimal netIncomeSinger { get; set; }
         public int month { get; set; }
         public int year { get; set; }
+        public int quarter { get; set; }
+        public int quarterYear { get; set; }
     }
 }

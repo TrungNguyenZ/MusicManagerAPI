@@ -108,5 +108,43 @@ namespace MusicManager.Services
         public async Task<List<StatisticPriceNameModel>> PriceQuarter_Singer(int quarteryear, int quarter, string artistName) {
             return await _repository.PriceQuarter_Singer(quarteryear, quarter, artistName);
         }
+        public async Task<StatisticTop> StatisticTop(int type , int quarteryear, int year)
+        {
+            var rs = new StatisticTop();
+            if(type == 1)
+            {
+                rs.TopCountry = await _repository.TopCountryQuarter(quarteryear, year);
+                rs.TopDigital = await _repository.TopDigitalQuarter(quarteryear, year);
+                rs.DigitalCount = await _repository.DigitalCountQuarter(quarteryear, year);
+            }
+            else
+            {
+                rs.TopCountry = await _repository.TopCountryYear(year);
+                rs.TopDigital = await _repository.TopDigitalYear(year);
+                rs.DigitalCount = await _repository.DigitalCountYear(year);
+            }
+            return rs;
+        }
+        public async Task<StatisticTop> StatisticTop_Singer(int type, int quarteryear, int year, string artistName, double revenuePercentage)
+        {
+            var rs = new StatisticTop();
+            if (type == 1)
+            {
+                rs.TopCountry = await _repository.TopCountryQuarter_Singer(quarteryear, year, artistName);
+                rs.TopCountry.sum = _commonService.GetNetSinger(revenuePercentage, rs.TopCountry.sum);
+                rs.TopDigital = await _repository.TopDigitalQuarter_Singer(quarteryear, year, artistName);
+                rs.TopDigital.sum = _commonService.GetNetSinger(revenuePercentage, rs.TopDigital.sum);
+                rs.DigitalCount = await _repository.DigitalCountQuarter_Singer(quarteryear, year, artistName);
+            }
+            else
+            {
+                rs.TopCountry = await _repository.TopCountryYear_Singer(year, artistName);
+                rs.TopCountry.sum = _commonService.GetNetSinger(revenuePercentage, rs.TopCountry.sum);
+                rs.TopDigital = await _repository.TopDigitalYear_Singer(year, artistName);
+                rs.TopDigital.sum = _commonService.GetNetSinger(revenuePercentage, rs.TopDigital.sum);
+                rs.DigitalCount = await _repository.DigitalCountYear_Singer(year, artistName);
+            }
+            return rs;
+        }
     }
 }

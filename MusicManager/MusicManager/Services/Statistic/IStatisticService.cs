@@ -1,4 +1,5 @@
 ﻿using MusicManager.Models;
+using System.Threading.Tasks;
 
 namespace MusicManager.Services
 {
@@ -28,6 +29,9 @@ namespace MusicManager.Services
         Task<List<StatisticPriceNameModel>> PriceYear_Singer(int quarteryear, string artistName);
         Task<List<StatisticPriceNameModel>> PriceQuarter(int quarteryear, int quarter);
         Task<List<StatisticPriceNameModel>> PriceQuarter_Singer(int quarteryear, int quarter, string artistName);
+        Task<StatisticTop> StatisticTop_Singer(int type, int quarteryear, int year, string artistName, double revenuePercentage);
+        Task<StatisticTop> StatisticTop(int type, int quarteryear, int year);
+
     }
 }
  

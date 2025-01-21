@@ -16,4 +16,16 @@
         public string Name { get; set; }
         public List<long> Data { get; set; }
     }
+    public class Statistic
+    {
+        public string name { get; set; }
+        public long sum { get; set; }
+    }
+    public class StatisticTop
+    {
+        public Statistic TopCountry { get; set; }
+        public Statistic TopDigital { get; set; }
+        public int DigitalCount { get; set; }
+    }
+
 }

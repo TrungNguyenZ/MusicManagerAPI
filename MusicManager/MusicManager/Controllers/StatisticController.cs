@@ -10,6 +10,7 @@ using System.Globalization;
 
 namespace MusicManager.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("[controller]")]
     public class StatisticController : ControllerBase
@@ -22,7 +23,7 @@ namespace MusicManager.Controllers
             _commonService = commonService;
         }
         [Authorize]
-        [HttpPost("total")]
+        [HttpGet("total")]
         public async Task<IActionResult> Total(int quarter, int quarterYear)
         {
             try
@@ -53,7 +54,38 @@ namespace MusicManager.Controllers
                 return Ok(bad);
             }
         }
-        [HttpPost("digital-total")]
+        [HttpGet("top")]
+        public async Task<IActionResult> StatisticTop(int type ,int quarter, int year)
+        {
+            try
+            {
+                var res = new ResponseData<StatisticTop>();
+                var isAdminClaim = User.FindFirst("isAdmin")?.Value;
+                var artistName = User.FindFirst("artistName")?.Value;
+                var revenuePercentage = User.FindFirst("revenuePercentage").Value;
+                if (isAdminClaim == "True")
+                {
+                    res.data = await _statisticService.StatisticTop(type, quarter, year);
+                }
+                else
+                {
+                    res.data = await _statisticService.StatisticTop_Singer(type, quarter, year, artistName, Double.Parse(revenuePercentage));
+                }
+
+                return Ok(res);
+            }
+            catch (Exception ex)
+            {
+                var bad = new ResponseBase()
+                {
+                    isSuccess = false,
+                    message = ex.Message,
+                    code = 500
+                };
+                return Ok(bad);
+            }
+        }
+        [HttpGet("digital-total")]
         public async Task<IActionResult> digitalSum(int type, int year, string? language)
         {
             try
@@ -117,7 +149,7 @@ namespace MusicManager.Controllers
                 return Ok(bad);
             }
         }
-        [HttpPost("digital-percent")]
+        [HttpGet("digital-percent")]
         public async Task<IActionResult> digitalPercent(int type, int quarter, int year)
         {
             try
@@ -144,7 +176,7 @@ namespace MusicManager.Controllers
                 return Ok(bad);
             }
         }
-        [HttpPost("country-percent")]
+        [HttpGet("country-percent")]
         public async Task<IActionResult> countryPercent(int type, int quarter, int year)
         {
             try
@@ -171,7 +203,7 @@ namespace MusicManager.Controllers
                 return Ok(bad);
             }
         }
-        [HttpPost("price-name-percent")]
+        [HttpGet("price-name-percent")]
         public async Task<IActionResult> priceNamePercent(int type, int quarter, int year)
         {
             try
@@ -198,7 +230,7 @@ namespace MusicManager.Controllers
                 return Ok(bad);
             }
         }
-        [HttpPost("youtube-percent")]
+        [HttpGet("youtube-percent")]
         public async Task<IActionResult> youtubePercent(int type, int quarter, int year)
         {
             try
