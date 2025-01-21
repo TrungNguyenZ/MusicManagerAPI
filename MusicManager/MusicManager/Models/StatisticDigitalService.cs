@@ -51,4 +51,15 @@
         public string countryCode { get; set; } = "";
         public long sum { get; set; } = 0;
     }
+    public class DigitalSumMobileModel
+    {
+        public string key { get; set; }
+        public List<RevenueModel> revenues { get; set; }
+    }
+
+    public class RevenueModel
+    {
+        public string platformName { get; set; }
+        public long value { get; set; }
+    }
 }
