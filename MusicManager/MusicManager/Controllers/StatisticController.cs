@@ -5,8 +5,11 @@ using MusicManager.Const;
 using MusicManager.Models;
 using MusicManager.Models.Base;
 using MusicManager.Services;
+using MusicManager.Services.Redis;
 using OfficeOpenXml;
+using System;
 using System.Globalization;
+using System.Text.Json;
 
 namespace MusicManager.Controllers
 {
@@ -17,10 +20,16 @@ namespace MusicManager.Controllers
     {
         private readonly IStatisticService _statisticService;
         private readonly ICommonService _commonService;
-        public StatisticController(IStatisticService statisticService, ICommonService commonService)
+        private readonly IRedisService _redisService;
+        public StatisticController(
+            IStatisticService statisticService, 
+            ICommonService commonService,
+            IRedisService redisService
+            )
         {
             _statisticService = statisticService;
             _commonService = commonService;
+            _redisService = redisService;
         }
         [Authorize]
         [HttpGet("total")]
@@ -34,11 +43,29 @@ namespace MusicManager.Controllers
                 var revenuePercentage = User.FindFirst("revenuePercentage").Value;
                 if (isAdminClaim == "True")
                 {
-                    res.data = await _statisticService.GetTotal(quarter, quarterYear);
+                    var dataRedis = await _redisService.GetAsync("Total_" + quarter + "_" + quarterYear);
+                    if(dataRedis == null)
+                    {
+                        res.data = await _statisticService.GetTotal(quarter, quarterYear);
+                        await _redisService.SetAsync("Total_" + quarter + "_" + quarterYear, JsonSerializer.Serialize(res.data));
+                    }
+                    else
+                    {
+                        res.data = JsonSerializer.Deserialize<StatisticTotalModel>(dataRedis);
+                    }
                 }
                 else
                 {
-                    res.data = await _statisticService.GetTotalBySinger(quarter, quarterYear, artistName, Double.Parse(revenuePercentage));
+                    var dataRedis = await _redisService.GetAsync("Total_" + quarter + "_" + quarterYear + "_" + artistName);
+                    if (dataRedis == null)
+                    {
+                        res.data = await _statisticService.GetTotalBySinger(quarter, quarterYear, artistName, Double.Parse(revenuePercentage));
+                        await _redisService.SetAsync("Total_" + quarter + "_" + quarterYear + "_" + artistName, JsonSerializer.Serialize(res.data));
+                    }
+                    else
+                    {
+                        res.data = JsonSerializer.Deserialize<StatisticTotalModel>(dataRedis);
+                    }
                 }
 
                 return Ok(res);
@@ -117,7 +144,7 @@ namespace MusicManager.Controllers
                 return Ok(bad);
             }
         }   
-        [HttpPost("digital-total-mobile")]
+        [HttpGet("digital-total-mobile")]
         public async Task<IActionResult> digitalSumMobile(int type, int year, string? language)
         {
             try

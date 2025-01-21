@@ -11,8 +11,14 @@ using MusicManager.Models;
 using MusicManager.Repositories.Data;
 using MusicManager.Services.TopChart;
 using OfficeOpenXml;
-
+using StackExchange.Redis;
+using MusicManager.Services.Redis;
 var builder = WebApplication.CreateBuilder(args);
+
+var redisConfig = builder.Configuration.GetSection("Redis").Get<RedisConfig>();
+builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+    ConnectionMultiplexer.Connect(redisConfig.ConnectionString));
+
 ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 builder.Services.AddCors(options =>
 {
@@ -106,8 +112,9 @@ builder.Services.AddScoped<IDataService, DataService>();
 builder.Services.AddScoped<ICommonService, CommonService>();
 builder.Services.AddScoped<IStatisticService, StatisticService>();
 builder.Services.AddScoped<ITopChartService, TopChartService>();
+builder.Services.AddScoped<IRedisService, RedisService>();
 var app = builder.Build();
-
+app.MapGet("/redis", () => "Redis integrated!");
 app.UseCors(x => x
             .AllowAnyOrigin()
             .AllowAnyMethod()
