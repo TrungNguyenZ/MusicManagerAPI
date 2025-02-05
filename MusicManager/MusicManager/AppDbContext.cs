@@ -18,9 +18,9 @@ namespace MusicManager
         public DbSet<StatisticPriceNameModel> StatisticPriceNameModel { get; set; }
         public DbSet<TopChartArtist> TopChartArtist { get; set; }
         public DbSet<TopChartTrack> TopChartTrack { get; set; }
-
         public DbSet<Product> Products { get; set; }
         public DbSet<DataModel> DataModels { get; set; }
+        public DbSet<RefreshToken> RefreshToken { get; set; }
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

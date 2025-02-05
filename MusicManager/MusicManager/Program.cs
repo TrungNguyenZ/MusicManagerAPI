@@ -105,6 +105,7 @@ builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped<IStatisticRepository, StatisticRepository>();
 builder.Services.AddScoped<ITopChartRepository, TopChartRepository>();
 builder.Services.AddScoped<IDataRepository, DataRepository>();
+builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
@@ -113,6 +114,7 @@ builder.Services.AddScoped<ICommonService, CommonService>();
 builder.Services.AddScoped<IStatisticService, StatisticService>();
 builder.Services.AddScoped<ITopChartService, TopChartService>();
 builder.Services.AddScoped<IRedisService, RedisService>();
+builder.Services.AddScoped<IRefreshTokenService, RefreshTokenService>();
 var app = builder.Build();
 app.MapGet("/redis", () => "Redis integrated!");
 app.UseCors(x => x

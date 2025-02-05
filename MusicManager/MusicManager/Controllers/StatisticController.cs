@@ -22,7 +22,7 @@ namespace MusicManager.Controllers
         private readonly ICommonService _commonService;
         private readonly IRedisService _redisService;
         public StatisticController(
-            IStatisticService statisticService, 
+            IStatisticService statisticService,
             ICommonService commonService,
             IRedisService redisService
             )
@@ -41,31 +41,23 @@ namespace MusicManager.Controllers
                 var isAdminClaim = User.FindFirst("isAdmin")?.Value;
                 var artistName = User.FindFirst("artistName")?.Value;
                 var revenuePercentage = User.FindFirst("revenuePercentage").Value;
-                if (isAdminClaim == "True")
+
+                var cacheKey = isAdminClaim == "True"
+                    ? $"Total_{quarter}_{quarterYear}"
+                    : $"Total_{quarter}_{quarterYear}_{artistName}";
+
+                var dataRedis = await _redisService.GetAsync(cacheKey);
+                if (dataRedis == null)
                 {
-                    var dataRedis = await _redisService.GetAsync("Total_" + quarter + "_" + quarterYear);
-                    if(dataRedis == null)
-                    {
-                        res.data = await _statisticService.GetTotal(quarter, quarterYear);
-                        await _redisService.SetAsync("Total_" + quarter + "_" + quarterYear, JsonSerializer.Serialize(res.data));
-                    }
-                    else
-                    {
-                        res.data = JsonSerializer.Deserialize<StatisticTotalModel>(dataRedis);
-                    }
+                    res.data = isAdminClaim == "True"
+                        ? await _statisticService.GetTotal(quarter, quarterYear)
+                        : await _statisticService.GetTotalBySinger(quarter, quarterYear, artistName, Double.Parse(revenuePercentage));
+
+                    await _redisService.SetAsync(cacheKey, JsonSerializer.Serialize(res.data));
                 }
                 else
                 {
-                    var dataRedis = await _redisService.GetAsync("Total_" + quarter + "_" + quarterYear + "_" + artistName);
-                    if (dataRedis == null)
-                    {
-                        res.data = await _statisticService.GetTotalBySinger(quarter, quarterYear, artistName, Double.Parse(revenuePercentage));
-                        await _redisService.SetAsync("Total_" + quarter + "_" + quarterYear + "_" + artistName, JsonSerializer.Serialize(res.data));
-                    }
-                    else
-                    {
-                        res.data = JsonSerializer.Deserialize<StatisticTotalModel>(dataRedis);
-                    }
+                    res.data = JsonSerializer.Deserialize<StatisticTotalModel>(dataRedis);
                 }
 
                 return Ok(res);
@@ -81,8 +73,9 @@ namespace MusicManager.Controllers
                 return Ok(bad);
             }
         }
+
         [HttpGet("top")]
-        public async Task<IActionResult> StatisticTop(int type ,int quarter, int year)
+        public async Task<IActionResult> StatisticTop(int type, int quarter, int year)
         {
             try
             {
@@ -90,13 +83,23 @@ namespace MusicManager.Controllers
                 var isAdminClaim = User.FindFirst("isAdmin")?.Value;
                 var artistName = User.FindFirst("artistName")?.Value;
                 var revenuePercentage = User.FindFirst("revenuePercentage").Value;
-                if (isAdminClaim == "True")
+
+                var cacheKey = isAdminClaim == "True"
+                    ? $"Top_{type}_{quarter}_{year}"
+                    : $"Top_{type}_{quarter}_{year}_{artistName}";
+
+                var dataRedis = await _redisService.GetAsync(cacheKey);
+                if (dataRedis == null)
                 {
-                    res.data = await _statisticService.StatisticTop(type, quarter, year);
+                    res.data = isAdminClaim == "True"
+                        ? await _statisticService.StatisticTop(type, quarter, year)
+                        : await _statisticService.StatisticTop_Singer(type, quarter, year, artistName, Double.Parse(revenuePercentage));
+
+                    await _redisService.SetAsync(cacheKey, JsonSerializer.Serialize(res.data));
                 }
                 else
                 {
-                    res.data = await _statisticService.StatisticTop_Singer(type, quarter, year, artistName, Double.Parse(revenuePercentage));
+                    res.data = JsonSerializer.Deserialize<StatisticTop>(dataRedis);
                 }
 
                 return Ok(res);
@@ -112,24 +115,47 @@ namespace MusicManager.Controllers
                 return Ok(bad);
             }
         }
+
         [HttpGet("digital-total")]
         public async Task<IActionResult> digitalSum(int type, int year, string? language)
         {
             try
             {
+                var isAdminClaim = User.FindFirst("isAdmin")?.Value;
+                var artistName = User.FindFirst("artistName")?.Value;
+                var cacheKey = "";
+
                 if (type == 1)
                 {
+                    cacheKey = $"DigitalSumMonth_{year}_{language}_{isAdminClaim}_{artistName}";
+                    var dataRedis = await _redisService.GetAsync(cacheKey);
+                    if (dataRedis != null)
+                        return Ok(JsonSerializer.Deserialize<ResponseData<StatisticSumModel>>(dataRedis));
+
                     var data = await DigitalSumMonth(year, language);
+                    await _redisService.SetAsync(cacheKey, JsonSerializer.Serialize(data));
                     return Ok(data);
                 }
                 else if (type == 2)
                 {
+                    cacheKey = $"DigitalSumQuarter_{year}_{language}_{isAdminClaim}_{artistName}";
+                    var dataRedis = await _redisService.GetAsync(cacheKey);
+                    if (dataRedis != null)
+                        return Ok(JsonSerializer.Deserialize<ResponseData<StatisticSumModel>>(dataRedis));
+
                     var data = await DigitalSumQuarter(year, language);
+                    await _redisService.SetAsync(cacheKey, JsonSerializer.Serialize(data));
                     return Ok(data);
                 }
                 else
                 {
+                    cacheKey = $"DigitalSumYear_{isAdminClaim}_{artistName}";
+                    var dataRedis = await _redisService.GetAsync(cacheKey);
+                    if (dataRedis != null)
+                        return Ok(JsonSerializer.Deserialize<ResponseData<StatisticSumModel>>(dataRedis));
+
                     var data = await DigitalSumYear();
+                    await _redisService.SetAsync(cacheKey, JsonSerializer.Serialize(data));
                     return Ok(data);
                 }
             }
@@ -143,25 +169,48 @@ namespace MusicManager.Controllers
                 };
                 return Ok(bad);
             }
-        }   
+        }
+
         [HttpGet("digital-total-mobile")]
         public async Task<IActionResult> digitalSumMobile(int type, int year, string? language)
         {
             try
             {
+                var isAdminClaim = User.FindFirst("isAdmin")?.Value;
+                var artistName = User.FindFirst("artistName")?.Value;
+                var cacheKey = "";
+
                 if (type == 1)
                 {
+                    cacheKey = $"DigitalSumMonthMobile_{year}_{language}_{isAdminClaim}_{artistName}";
+                    var dataRedis = await _redisService.GetAsync(cacheKey);
+                    if (dataRedis != null)
+                        return Ok(JsonSerializer.Deserialize<ResponseData<List<DigitalSumMobileModel>>>(dataRedis));
+
                     var data = await DigitalSumMonthMobile(year, language);
+                    await _redisService.SetAsync(cacheKey, JsonSerializer.Serialize(data));
                     return Ok(data);
                 }
                 else if (type == 2)
                 {
+                    cacheKey = $"DigitalSumQuarterMobile_{year}_{language}_{isAdminClaim}_{artistName}";
+                    var dataRedis = await _redisService.GetAsync(cacheKey);
+                    if (dataRedis != null)
+                        return Ok(JsonSerializer.Deserialize<ResponseData<List<DigitalSumMobileModel>>>(dataRedis));
+
                     var data = await DigitalSumQuarterMobile(year, language);
+                    await _redisService.SetAsync(cacheKey, JsonSerializer.Serialize(data));
                     return Ok(data);
                 }
                 else
                 {
+                    cacheKey = $"DigitalSumYearMobile_{isAdminClaim}_{artistName}";
+                    var dataRedis = await _redisService.GetAsync(cacheKey);
+                    if (dataRedis != null)
+                        return Ok(JsonSerializer.Deserialize<ResponseData<List<DigitalSumMobileModel>>>(dataRedis));
+
                     var data = await DigitalSumYearMobile();
+                    await _redisService.SetAsync(cacheKey, JsonSerializer.Serialize(data));
                     return Ok(data);
                 }
             }
@@ -176,19 +225,36 @@ namespace MusicManager.Controllers
                 return Ok(bad);
             }
         }
+
         [HttpGet("digital-percent")]
         public async Task<IActionResult> digitalPercent(int type, int quarter, int year)
         {
             try
             {
+                var isAdminClaim = User.FindFirst("isAdmin")?.Value;
+                var artistName = User.FindFirst("artistName")?.Value;
+                var cacheKey = "";
+
                 if (type == 1)
                 {
+                    cacheKey = $"DigitalPercentQuarter_{quarter}_{year}_{isAdminClaim}_{artistName}";
+                    var dataRedis = await _redisService.GetAsync(cacheKey);
+                    if (dataRedis != null)
+                        return Ok(JsonSerializer.Deserialize<ResponseData<StatisticDataPercentModel>>(dataRedis));
+
                     var data = await DigitalPercentQuarter(quarter, year);
+                    await _redisService.SetAsync(cacheKey, JsonSerializer.Serialize(data));
                     return Ok(data);
                 }
                 else
                 {
+                    cacheKey = $"DigitalPercentYear_{year}_{isAdminClaim}_{artistName}";
+                    var dataRedis = await _redisService.GetAsync(cacheKey);
+                    if (dataRedis != null)
+                        return Ok(JsonSerializer.Deserialize<ResponseData<StatisticDataPercentModel>>(dataRedis));
+
                     var data = await DigitalPercentYear(year);
+                    await _redisService.SetAsync(cacheKey, JsonSerializer.Serialize(data));
                     return Ok(data);
                 }
             }
@@ -203,19 +269,36 @@ namespace MusicManager.Controllers
                 return Ok(bad);
             }
         }
+
         [HttpGet("country-percent")]
         public async Task<IActionResult> countryPercent(int type, int quarter, int year)
         {
             try
             {
+                var isAdminClaim = User.FindFirst("isAdmin")?.Value;
+                var artistName = User.FindFirst("artistName")?.Value;
+                var cacheKey = "";
+
                 if (type == 1)
                 {
+                    cacheKey = $"CountryPercentQuarter_{quarter}_{year}_{isAdminClaim}_{artistName}";
+                    var dataRedis = await _redisService.GetAsync(cacheKey);
+                    if (dataRedis != null)
+                        return Ok(JsonSerializer.Deserialize<ResponseData<StatisticDataPercentModel>>(dataRedis));
+
                     var data = await CountryPercentQuarter(quarter, year);
+                    await _redisService.SetAsync(cacheKey, JsonSerializer.Serialize(data));
                     return Ok(data);
                 }
                 else
                 {
+                    cacheKey = $"CountryPercentYear_{year}_{isAdminClaim}_{artistName}";
+                    var dataRedis = await _redisService.GetAsync(cacheKey);
+                    if (dataRedis != null)
+                        return Ok(JsonSerializer.Deserialize<ResponseData<StatisticDataPercentModel>>(dataRedis));
+
                     var data = await CountryPercentYear(year);
+                    await _redisService.SetAsync(cacheKey, JsonSerializer.Serialize(data));
                     return Ok(data);
                 }
             }
@@ -230,19 +313,36 @@ namespace MusicManager.Controllers
                 return Ok(bad);
             }
         }
+
         [HttpGet("price-name-percent")]
         public async Task<IActionResult> priceNamePercent(int type, int quarter, int year)
         {
             try
             {
+                var isAdminClaim = User.FindFirst("isAdmin")?.Value;
+                var artistName = User.FindFirst("artistName")?.Value;
+                var cacheKey = "";
+
                 if (type == 1)
                 {
+                    cacheKey = $"PriceQuarter_{year}_{quarter}_{isAdminClaim}_{artistName}";
+                    var dataRedis = await _redisService.GetAsync(cacheKey);
+                    if (dataRedis != null)
+                        return Ok(JsonSerializer.Deserialize<ResponseData<StatisticDataPercentModel>>(dataRedis));
+
                     var data = await PriceQuarter(year, quarter);
+                    await _redisService.SetAsync(cacheKey, JsonSerializer.Serialize(data));
                     return Ok(data);
                 }
                 else
                 {
+                    cacheKey = $"PriceYear_{year}_{isAdminClaim}_{artistName}";
+                    var dataRedis = await _redisService.GetAsync(cacheKey);
+                    if (dataRedis != null)
+                        return Ok(JsonSerializer.Deserialize<ResponseData<StatisticDataPercentModel>>(dataRedis));
+
                     var data = await PriceYear(year);
+                    await _redisService.SetAsync(cacheKey, JsonSerializer.Serialize(data));
                     return Ok(data);
                 }
             }
@@ -257,19 +357,36 @@ namespace MusicManager.Controllers
                 return Ok(bad);
             }
         }
+
         [HttpGet("youtube-percent")]
         public async Task<IActionResult> youtubePercent(int type, int quarter, int year)
         {
             try
             {
+                var isAdminClaim = User.FindFirst("isAdmin")?.Value;
+                var artistName = User.FindFirst("artistName")?.Value;
+                var cacheKey = "";
+
                 if (type == 1)
                 {
+                    cacheKey = $"YoutubeQuarter_{year}_{quarter}_{isAdminClaim}_{artistName}";
+                    var dataRedis = await _redisService.GetAsync(cacheKey);
+                    if (dataRedis != null)
+                        return Ok(JsonSerializer.Deserialize<ResponseData<StatisticDataPercentModel>>(dataRedis));
+
                     var data = await YoutubeQuarter(year, quarter);
+                    await _redisService.SetAsync(cacheKey, JsonSerializer.Serialize(data));
                     return Ok(data);
                 }
                 else
                 {
+                    cacheKey = $"YoutubeYear_{year}_{isAdminClaim}_{artistName}";
+                    var dataRedis = await _redisService.GetAsync(cacheKey);
+                    if (dataRedis != null)
+                        return Ok(JsonSerializer.Deserialize<ResponseData<StatisticDataPercentModel>>(dataRedis));
+
                     var data = await YoutubeYear(year);
+                    await _redisService.SetAsync(cacheKey, JsonSerializer.Serialize(data));
                     return Ok(data);
                 }
             }
@@ -422,7 +539,7 @@ namespace MusicManager.Controllers
             };
             return res;
         }
-       
+
         protected async Task<ResponseData<StatisticSumModel>> DigitalSumQuarter(int year, string? language)
         {
             var isAdminClaim = User.FindFirst("isAdmin")?.Value;
@@ -533,7 +650,7 @@ namespace MusicManager.Controllers
             {
                 data = await _statisticService.Digital_Year_Percent_Singer(year, artistName);
             }
-            if(data !=null && data.Count() > 0)
+            if (data != null && data.Count() > 0)
             {
                 dataChart.labels = data.Select(x => x.digitalServiceProvider).ToList();
                 dataChart.data = data.Select(x => (isAdminClaim == "True" ? x.sum : _commonService.GetNetSinger(revenuePercentage, x.sum))).ToList();
@@ -571,7 +688,7 @@ namespace MusicManager.Controllers
             };
             return res;
         }
-        protected async Task<ResponseData<StatisticDataPercentModel>>CountryPercentQuarter(int quarter, int year)
+        protected async Task<ResponseData<StatisticDataPercentModel>> CountryPercentQuarter(int quarter, int year)
         {
             var isAdminClaim = User.FindFirst("isAdmin")?.Value;
             var artistName = User.FindFirst("artistName")?.Value;

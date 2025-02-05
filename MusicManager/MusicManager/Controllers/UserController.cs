@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MusicManager.Models;
 using MusicManager.Models.Base;
+using MusicManager.Repositories;
 using MusicManager.Services;
 
 namespace MusicManager.Controllers
@@ -13,14 +14,16 @@ namespace MusicManager.Controllers
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ITokenService _tokenService;
+        private readonly IRefreshTokenService _refreshTokenService;
 
         // Bộ nhớ lưu refresh token
-        private static readonly Dictionary<string, string> RefreshTokens = new Dictionary<string, string>();
+        private static readonly Dictionary<string, List<string>> RefreshTokens = new Dictionary<string, List<string>>();
 
-        public UserController(UserManager<ApplicationUser> userManager, ITokenService tokenService)
+        public UserController(UserManager<ApplicationUser> userManager, ITokenService tokenService, IRefreshTokenService refreshTokenService)
         {
             _userManager = userManager;
             _tokenService = tokenService;
+            _refreshTokenService = refreshTokenService;
         }
 
         [HttpPost("login")]
@@ -45,37 +48,84 @@ namespace MusicManager.Controllers
                 var accessToken = await _tokenService.GenerateAccessToken(user);
                 var refreshToken = _tokenService.GenerateRefreshToken();
 
-                // Lưu refresh token trong bộ nhớ
-                RefreshTokens[user.UserName] = refreshToken;
-                res.data = new ResponseToken { AccessToken = accessToken, RefreshToken = refreshToken, FullName = user.Name, IsAdmin = user.IsAdmin };
-                return Ok(res);
+                // Lưu refresh token vào danh sách
+                //if (!RefreshTokens.ContainsKey(user.UserName))
+                //{
+                //    RefreshTokens[user.UserName] = new List<string>();
+                //}
+                //RefreshTokens[user.UserName].Add(refreshToken); 
+                var refreshTokenEntity = new RefreshToken
+                {
+                    UserId = user.Id,
+                    Token = refreshToken,
+                    ExpiresAt = DateTime.UtcNow.AddDays(30) // Thời gian hết hạn
+                };
+
+                _refreshTokenService.Create(refreshTokenEntity);
+
+                res.data = new ResponseToken
+                {
+                    AccessToken = accessToken,
+                    RefreshToken = refreshToken,
+                    FullName = user.Name,
+                    IsAdmin = user.IsAdmin
+                };
             }
-            res.code = 401;
-            res.message = "Tài khoản đăng nhập không đúng!";
             return Ok(res);
+
         }
 
         [HttpPost("refresh-token")]
         public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
         {
-            var principal = _tokenService.GetPrincipalFromExpiredToken(request.AccessToken);
-            var username = principal.Identity.Name;
-
-            if (!RefreshTokens.TryGetValue(username, out var savedRefreshToken) || savedRefreshToken != request.RefreshToken)
+            try
             {
-                return Unauthorized();
+                var principal = _tokenService.GetPrincipalFromExpiredToken(request.AccessToken);
+                var username = principal.Identity.Name;
+                var user = await _userManager.FindByNameAsync(username);
+
+                var storedToken = _refreshTokenService.GetAll().FirstOrDefault(t =>
+               t.UserId == user.Id &&
+               t.Token == request.RefreshToken &&
+               t.ExpiresAt > DateTime.UtcNow);
+                // Kiểm tra xem user có refresh token này không
+                if (storedToken == null)
+                {
+                    var rs = new ResponseBase()
+                    {
+                        code = 401,
+                        message = "Phiên đăng nhập hết hạn"
+                    };
+                    return Unauthorized(rs);
+                }
+
+                var userData = await _userManager.FindByNameAsync(username);
+                var newAccessToken = await _tokenService.GenerateAccessToken(userData);
+                var newRefreshToken = _tokenService.GenerateRefreshToken();
+
+                storedToken.Token = newRefreshToken;
+                storedToken.ExpiresAt = DateTime.UtcNow.AddDays(30);
+                _refreshTokenService.Update(storedToken);
+                // Cập nhật danh sách refresh token
+                //savedRefreshTokens.Remove(request.RefreshToken); // Xóa token cũ
+                //savedRefreshTokens.Add(newRefreshToken); // Thêm token mới
+
+                var res = new ResponseData<ResponseToken>()
+                {
+                    data = new ResponseToken
+                    {
+                        AccessToken = newAccessToken,
+                        RefreshToken = newRefreshToken,
+                        FullName = userData.Name,
+                        IsAdmin = userData.IsAdmin
+                    }
+                };
+                return Ok(res);
             }
-            var userData = await _userManager.FindByNameAsync(username);
-            var newAccessToken = _tokenService.GenerateAccessToken(userData).Result;
-            var newRefreshToken = _tokenService.GenerateRefreshToken();
-
-            // Cập nhật refresh token
-            RefreshTokens[username] = newRefreshToken;
-            var res = new ResponseData<ResponseToken>()
+            catch (Exception ex)
             {
-                data = new ResponseToken { AccessToken = newAccessToken, RefreshToken = newRefreshToken, FullName = userData.Name, IsAdmin = userData.IsAdmin }
-            };
-            return Ok(res);
+                return StatusCode(500, "Internal server error");
+            }
         }
         // API thêm tài khoản
         [HttpPost("create")]
@@ -89,7 +139,8 @@ namespace MusicManager.Controllers
                 res.message = "Tài khoản đã tồn tại!";
                 return Ok(res);
             }
-            var input = new ApplicationUser {
+            var input = new ApplicationUser
+            {
                 UserName = model.Username,
                 PhoneNumber = model.Phone,
                 Email = model.Email,
@@ -129,7 +180,10 @@ namespace MusicManager.Controllers
             user.Email = model.Email;
             user.IsAdmin = model.IsAdmin;
             user.ArtistName = model.ArtistName;
-
+            user.PhoneNumber = model.Phone;
+            user.RevenuePercentage = model.RevenuePercentage;
+            user.UserName = model.Username;
+            user.Name = model.Name;
             var result = await _userManager.UpdateAsync(user);
 
             if (result.Succeeded)
@@ -205,7 +259,7 @@ namespace MusicManager.Controllers
         {
             var res = new ResponseData<List<ApplicationUser>>()
             {
-                data = _userManager.Users.OrderByDescending(x=>x.Id).ToList()
+                data = _userManager.Users.OrderByDescending(x => x.Id).ToList()
             };
             return Ok(res);
         }

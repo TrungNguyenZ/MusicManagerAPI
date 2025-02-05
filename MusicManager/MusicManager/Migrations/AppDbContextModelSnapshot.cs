@@ -163,6 +163,9 @@ namespace MusicManager.Migrations
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("int");
 
+                    b.Property<bool>("Active")
+                        .HasColumnType("bit");
+
                     b.Property<string>("ArtistName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -234,6 +237,24 @@ namespace MusicManager.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("MusicManager.Models.CountryPercentModel", b =>
+                {
+                    b.Property<string>("countryCode")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("quarter")
+                        .HasColumnType("int");
+
+                    b.Property<int>("quarterYear")
+                        .HasColumnType("int");
+
+                    b.Property<long>("sum")
+                        .HasColumnType("bigint");
+
+                    b.ToTable("CountryPercentModel");
+                });
+
             modelBuilder.Entity("MusicManager.Models.DataModel", b =>
                 {
                     b.Property<int>("id")
@@ -303,6 +324,12 @@ namespace MusicManager.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("quarter")
+                        .HasColumnType("int");
+
+                    b.Property<int>("quarterYear")
+                        .HasColumnType("int");
+
                     b.Property<string>("reportedMon")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -320,6 +347,93 @@ namespace MusicManager.Migrations
                     b.HasKey("id");
 
                     b.ToTable("DataModels");
+                });
+
+            modelBuilder.Entity("MusicManager.Models.DigitalMonthSumModel", b =>
+                {
+                    b.Property<string>("digitalServiceProvider")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("month")
+                        .HasColumnType("int");
+
+                    b.Property<long>("sum")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("year")
+                        .HasColumnType("int");
+
+                    b.ToTable("DigitalMonthSumModel");
+                });
+
+            modelBuilder.Entity("MusicManager.Models.DigitalQuarterPercentModel", b =>
+                {
+                    b.Property<string>("digitalServiceProvider")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("quarter")
+                        .HasColumnType("int");
+
+                    b.Property<int>("quarterYear")
+                        .HasColumnType("int");
+
+                    b.Property<long>("sum")
+                        .HasColumnType("bigint");
+
+                    b.ToTable("DigitalQuarterPercentModel");
+                });
+
+            modelBuilder.Entity("MusicManager.Models.DigitalQuarterSumModel", b =>
+                {
+                    b.Property<string>("digitalServiceProvider")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("quarter")
+                        .HasColumnType("int");
+
+                    b.Property<long>("sum")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("year")
+                        .HasColumnType("int");
+
+                    b.ToTable("DigitalQuarterSumModel");
+                });
+
+            modelBuilder.Entity("MusicManager.Models.DigitalYearPercentModel", b =>
+                {
+                    b.Property<string>("digitalServiceProvider")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("quarter")
+                        .HasColumnType("int");
+
+                    b.Property<int>("quarterYear")
+                        .HasColumnType("int");
+
+                    b.Property<long>("sum")
+                        .HasColumnType("bigint");
+
+                    b.ToTable("DigitalYearPercentModel");
+                });
+
+            modelBuilder.Entity("MusicManager.Models.DigitalYearSumModel", b =>
+                {
+                    b.Property<string>("digitalServiceProvider")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("quarterYear")
+                        .HasColumnType("int");
+
+                    b.Property<long>("sum")
+                        .HasColumnType("bigint");
+
+                    b.ToTable("DigitalYearSumModel");
                 });
 
             modelBuilder.Entity("MusicManager.Models.Product", b =>
@@ -342,6 +456,45 @@ namespace MusicManager.Migrations
                     b.ToTable("Products");
                 });
 
+            modelBuilder.Entity("MusicManager.Models.RefreshToken", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("RefreshTokens");
+                });
+
+            modelBuilder.Entity("MusicManager.Models.StatisticPriceNameModel", b =>
+                {
+                    b.Property<string>("priceName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<long>("sum")
+                        .HasColumnType("bigint");
+
+                    b.ToTable("StatisticPriceNameModel");
+                });
+
             modelBuilder.Entity("MusicManager.Models.StatisticTotalModel", b =>
                 {
                     b.Property<long>("TotalForAll")
@@ -354,6 +507,52 @@ namespace MusicManager.Migrations
                         .HasColumnType("bigint");
 
                     b.ToTable("StatisticTotalModels");
+                });
+
+            modelBuilder.Entity("MusicManager.Models.StatisticYoutubeModel", b =>
+                {
+                    b.Property<string>("revenue")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<long>("sum")
+                        .HasColumnType("bigint");
+
+                    b.ToTable("StatisticYoutubeModel");
+                });
+
+            modelBuilder.Entity("MusicManager.Models.TopChartArtist", b =>
+                {
+                    b.Property<string>("artistName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("percentage")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<long>("sum")
+                        .HasColumnType("bigint");
+
+                    b.ToTable("TopChartArtist");
+                });
+
+            modelBuilder.Entity("MusicManager.Models.TopChartTrack", b =>
+                {
+                    b.Property<string>("artistName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("catalogueTitle")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("percentage")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<long>("sum")
+                        .HasColumnType("bigint");
+
+                    b.ToTable("TopChartTrack");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
