@@ -13,8 +13,15 @@ using MusicManager.Services.TopChart;
 using OfficeOpenXml;
 using StackExchange.Redis;
 using MusicManager.Services.Redis;
+using Hangfire;
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddHangfire(config =>
+    config.SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+          .UseSimpleAssemblyNameTypeSerializer()
+          .UseRecommendedSerializerSettings()
+          .UseSqlServerStorage(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+builder.Services.AddHangfireServer();
 var redisConfig = builder.Configuration.GetSection("Redis").Get<RedisConfig>();
 builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
     ConnectionMultiplexer.Connect(redisConfig.ConnectionString));
@@ -107,7 +114,6 @@ builder.Services.AddScoped<ITopChartRepository, TopChartRepository>();
 builder.Services.AddScoped<IDataRepository, DataRepository>();
 builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 
-builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IDataService, DataService>();
 builder.Services.AddScoped<ICommonService, CommonService>();
@@ -135,5 +141,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.UseHangfireDashboard("/hangfire");
 
 app.Run();
