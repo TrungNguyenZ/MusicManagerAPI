@@ -30,6 +30,16 @@ namespace MusicManager.Services.Redis
         {
             return await _database.KeyDeleteAsync(key);
         }
+        public  void ClearCacheContaining(string pattern)
+        {
+            var server = _redis.GetServer(_redis.GetEndPoints().First());
+            var db = _redis.GetDatabase();
 
+            var keys = server.Keys(pattern: $"*{pattern}*").ToArray(); // Lấy tất cả key chứa pattern
+            if (keys.Length > 0)
+            {
+                db.KeyDelete(keys); 
+            }
+        }
     }
 }

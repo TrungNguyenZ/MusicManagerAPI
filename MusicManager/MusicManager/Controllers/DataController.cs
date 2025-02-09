@@ -1,9 +1,12 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using Hangfire;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MusicManager.Models;
 using MusicManager.Models.Base;
 using MusicManager.Services;
+using MusicManager.Services.Redis;
 using OfficeOpenXml;
+using StackExchange.Redis;
 using System.Globalization;
 
 namespace MusicManager.Controllers
@@ -14,38 +17,100 @@ namespace MusicManager.Controllers
     {
         private readonly IDataService _dataService;
         private readonly ICommonService _commonService;
-        public DataController(IDataService dataService, ICommonService commonService)
+        private readonly IRedisService _redisService;
+        public DataController(IDataService dataService, ICommonService commonService, IRedisService redisService)
         {
             _dataService = dataService;
             _commonService = commonService;
+            _redisService = redisService;
         }
-        [HttpPost("upload-excel")]
-        public async Task<IActionResult> UploadExcel(IFormFile file)
+        [HttpGet("download-template")]
+        public IActionResult DownloadTemplate()
         {
             try
             {
-                var res = new ResponseBase();
-                if (file == null || file.Length == 0)
+                var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Templates", "SampleTemplate.xlsx");
+
+                if (!System.IO.File.Exists(filePath))
                 {
-                    return BadRequest("File không hợp lệ.");
+                    return NotFound("File mẫu không tồn tại.");
                 }
 
-                var data = new List<Dictionary<string, string>>(); // Lưu dữ liệu từ Excel
+                var fileBytes = System.IO.File.ReadAllBytes(filePath);
+                var contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+                var fileName = "SampleTemplate.xlsx";
 
+                return File(fileBytes, contentType, fileName);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpPost("upload-excel")]
+        public IActionResult UploadExcel(IFormFile file, [FromForm] int quarter, [FromForm] int year)
+        {
+            try
+            {
+                var rs = new ResponseBase()
+                {
+                    message = "Tệp Excel đang được xử lý, vui lòng kiểm tra sau!"
+                };
+                if (file == null || file.Length == 0)
+                {
+                    rs.code = 400;
+                    rs.message = "File không hợp lệ.";
+                    return Ok(rs);
+                }
+                var fileExtension = Path.GetExtension(file.FileName).ToLower();
+                if (fileExtension != ".xlsx" && fileExtension != ".xls")
+                {
+                    rs.code = 400;
+                    rs.message = "Không phải file excel";
+                    return Ok(rs);
+                }
+
+                // Lưu file vào bộ nhớ tạm
                 using (var stream = new MemoryStream())
                 {
-                    await file.CopyToAsync(stream);
+                    file.CopyTo(stream);
+                    var fileBytes = stream.ToArray();
+
+                    // Đẩy công việc vào hàng đợi Hangfire để xử lý nền
+                    //BackgroundJob.Enqueue(() => ProcessExcel(fileBytes, quarter, year));
+                    ProcessExcel(fileBytes, quarter, year);
+                }
+
+                return Ok(rs);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = ex.Message });
+            }
+        }
+        [NonAction]
+        public void ProcessExcel(byte[] fileBytes, int quarter, int year)
+        {
+            try
+            {
+                var data = new List<Dictionary<string, string>>();
+
+                using (var stream = new MemoryStream(fileBytes))
+                {
                     ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
                     using (var package = new ExcelPackage(stream))
                     {
                         var worksheet = package.Workbook.Worksheets[0];
-                        var rowCount = worksheet.Dimension.Rows;      
+                        var rowCount = worksheet.Dimension.Rows;
                         var colCount = worksheet.Dimension.Columns;
                         var headers = new List<string>();
+
                         for (int col = 1; col <= colCount; col++)
                         {
                             headers.Add(worksheet.Cells[7, col].Text);
                         }
+
                         for (int row = 8; row <= rowCount; row++)
                         {
                             var rowData = new Dictionary<string, string>();
@@ -57,13 +122,14 @@ namespace MusicManager.Controllers
                         }
                     }
                 }
+
                 var list = new List<DataModel>();
-                foreach (var row in data.Where((item,index)=>index > 121624).SkipLast(3))
+                foreach (var row in data)
                 {
-                    var dataRow = row.Where(x => x.Key != null && x.Key != "").ToList();
+                    var dataRow = row.Where(x => !string.IsNullOrEmpty(x.Key)).ToList();
                     var netIncome = decimal.Parse(dataRow[26].Value);
-                    string dateStr = dataRow[8].Value;
-                    DateTime date = DateTime.ParseExact(dateStr, "yyyyMM", System.Globalization.CultureInfo.InvariantCulture);
+                    DateTime date = DateTime.ParseExact(dataRow[8].Value, "yyyyMM", System.Globalization.CultureInfo.InvariantCulture);
+
                     var model = new DataModel()
                     {
                         marketingOwner = dataRow[0].Value,
@@ -78,7 +144,7 @@ namespace MusicManager.Controllers
                         countryDescription = dataRow[11].Value,
                         priceName = dataRow[12].Value,
                         revenueTypeDesc = dataRow[13].Value,
-                        sale = Int32.Parse(dataRow[14].Value),
+                        sale = int.Parse(dataRow[14].Value),
                         exchRate = _commonService.ConvertDecimal(dataRow[18].Value),
                         grossIncome = _commonService.ConvertDecimal(dataRow[19].Value),
                         distributionFees = _commonService.ConvertDecimal(dataRow[21].Value),
@@ -87,26 +153,23 @@ namespace MusicManager.Controllers
                         netIncomeSinger = 0,
                         month = date.Month,
                         year = date.Year,
+                        quarter = quarter,
+                        quarterYear = year
                     };
+
                     list.Add(model);
-                   
                 }
+
                 _dataService.AddRange(list);
-                return Ok(res);
+                _redisService.ClearCacheContaining("_" + quarter + "_" + year);
+
             }
             catch (Exception ex)
             {
-
-                var res = new ResponseBase()
-                {
-                    isSuccess = false,
-                    message = ex.Message,
-                    code = 500
-                };
-                return Ok("OK");
+                Console.WriteLine($"Lỗi khi xử lý file Excel: {ex.Message}");
             }
-         
         }
+
         [HttpGet("export-excel")]
         public async Task<IActionResult> ExportExcel(int quarter, int year)
         {
@@ -120,7 +183,7 @@ namespace MusicManager.Controllers
             }
             else
             {
-                data = await _dataService.GetDataExcel(artistName,quarter, year);
+                data = await _dataService.GetDataExcel(artistName, quarter, year);
             }
             if (data == null || !data.Any())
             {
@@ -175,7 +238,7 @@ namespace MusicManager.Controllers
                 }
                 else
                 {
-                    worksheet.Cells[i + startRow + 1, 14].Value = (long)_commonService.GetNetSinger(revenuePercentage, (long)data[i].netIncome) ;
+                    worksheet.Cells[i + startRow + 1, 14].Value = (long)_commonService.GetNetSinger(revenuePercentage, (long)data[i].netIncome);
                 }
             }
 
@@ -192,7 +255,7 @@ namespace MusicManager.Controllers
             var contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
             return File(stream, contentType, fileName);
-        } 
+        }
 
     }
 }
