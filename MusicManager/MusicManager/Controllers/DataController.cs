@@ -78,8 +78,7 @@ namespace MusicManager.Controllers
                     var fileBytes = stream.ToArray();
 
                     // Đẩy công việc vào hàng đợi Hangfire để xử lý nền
-                    //BackgroundJob.Enqueue(() => ProcessExcel(fileBytes, quarter, year));
-                    ProcessExcel(fileBytes, quarter, year);
+                    BackgroundJob.Enqueue(() => ProcessExcel(fileBytes, quarter, year));
                 }
 
                 return Ok(rs);
