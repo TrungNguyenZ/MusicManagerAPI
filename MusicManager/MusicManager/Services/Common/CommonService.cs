@@ -1,6 +1,10 @@
-﻿using MusicManager.Models;
+﻿using Google.Apis.Auth.OAuth2;
+using MusicManager.Models;
 using MusicManager.Repositories;
+using Newtonsoft.Json;
 using System.Globalization;
+using System.Net.Http.Headers;
+using System.Text;
 
 namespace MusicManager.Services
 {
@@ -11,7 +15,7 @@ namespace MusicManager.Services
         {
             _repositoryUser = repositoryUser;
         }
-        public decimal ConvertDecimal (String input)
+        public decimal ConvertDecimal(String input)
         {
             input = input.Replace(",", ".");
             decimal decimalValue = decimal.Parse(input, NumberStyles.Float, CultureInfo.InvariantCulture);
@@ -28,18 +32,67 @@ namespace MusicManager.Services
             var gross = value * revenuePercentage / 100;
             var net = (long)(gross * 90 / 100) * 90 / 100;
             return net;
-        }   
+        }
         public long GetNetSinger(string revenuePercentage, double value)
         {
             var gross = value * Double.Parse(revenuePercentage) / 100;
             var net = (long)(gross * 90 / 100) * 90 / 100;
             return net;
-        } 
+        }
         public long GetNetSinger(string revenuePercentage, long value)
         {
             var gross = value * Double.Parse(revenuePercentage) / 100;
             var net = (long)(gross * 90 / 100) * 90 / 100;
             return net;
         }
+        public async Task<string> GetAccessTokenAsync()
+        {
+            var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "JsonAuthenFCM", "mykind-19350-firebase-adminsdk-fbsvc-ba600518ef.json");
+            using (var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+            {
+                var googleCredential = GoogleCredential.FromStream(stream)
+                    .CreateScoped("https://www.googleapis.com/auth/firebase.messaging");
+                string rs = await googleCredential.UnderlyingCredential.GetAccessTokenForRequestAsync();
+                return rs;
+            }
+        }
+        public async Task SendNotificationToTopicAsync(string accessToken, string title, string body, string topic)
+        {
+            // URL endpoint FCM HTTP v1: thay "mykind-19350" bằng Project ID của bạn
+            string url = "https://fcm.googleapis.com/v1/projects/mykind-19350/messages:send";
+
+            // Tạo payload JSON theo cấu trúc của FCM HTTP v1
+            var payload = new
+            {
+                message = new
+                {
+                    topic = topic,
+                    notification = new
+                    {
+                        title = title,
+                        body = body
+                    }
+                }
+            };
+
+            // Serialize payload sang JSON
+            string jsonPayload = JsonConvert.SerializeObject(payload);
+
+            using (var client = new HttpClient())
+            {
+                // Thiết lập header Authorization với Bearer token
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+                // Tạo nội dung của request với kiểu "application/json"
+                using (var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json"))
+                {
+                    // Gửi POST request đến FCM
+                    HttpResponseMessage response = await client.PostAsync(url, content);
+                    string responseString = await response.Content.ReadAsStringAsync();
+                }
+            }
+        }
+
     }
 }
