@@ -9,6 +9,8 @@ namespace MusicManager.Services
         long GetNetSinger(string revenuePercentage, double value);
         long GetNetSinger(double revenuePercentage, long value);
         long GetNetSinger(string revenuePercentage, long value);
+        Task<string> GetAccessTokenAsync();
+        Task SendNotificationToTopicAsync(string accessToken, string title, string body, string topic);
     }
 }
  
