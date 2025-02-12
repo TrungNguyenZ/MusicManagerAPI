@@ -87,7 +87,7 @@ namespace MusicManager.Controllers
                     var fileBytes = stream.ToArray();
 
                     // Đẩy công việc vào hàng đợi Hangfire để xử lý nền
-                    BackgroundJob.Enqueue(() => ProcessExcel(fileBytes, quarter, year));
+                    BackgroundJob.Enqueue(() =>  ProcessExcel(fileBytes, quarter, year));
                 }
 
                 return Ok(rs);
@@ -98,7 +98,7 @@ namespace MusicManager.Controllers
             }
         }
         [NonAction]
-        public void ProcessExcel(byte[] fileBytes, int quarter, int year)
+        public  async Task ProcessExcel(byte[] fileBytes, int quarter, int year)
         {
             try
             {
@@ -170,6 +170,8 @@ namespace MusicManager.Controllers
 
                 _dataService.AddRange(list);
                 _redisService.ClearCacheContaining("_" + quarter + "_" + year);
+                 var token = await _commonService.GetAccessTokenAsync();
+                 await _commonService.SendNotificationToTopicAsync(token, $"Đã có đối soát của Quý {quarter} năm {year}", "Vui lòng vào app kiểm tra", "all");
 
             }
             catch (Exception ex)
