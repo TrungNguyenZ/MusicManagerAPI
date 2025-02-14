@@ -1,4 +1,5 @@
 ﻿using Google.Apis.Auth.OAuth2;
+using MimeKit;
 using MusicManager.Models;
 using MusicManager.Repositories;
 using Newtonsoft.Json;
@@ -92,6 +93,30 @@ namespace MusicManager.Services
                     string responseString = await response.Content.ReadAsStringAsync();
                 }
             }
+        }
+        public async Task SendEmailAsync(List<string> toList, string subject, string body)
+        {
+            var emailMessage = new MimeMessage();
+            emailMessage.From.Add(new MailboxAddress("Kind Media", "kindmedia.vn@gmail.com"));
+            foreach (var email in toList)
+            {
+                emailMessage.To.Add(new MailboxAddress("", email));
+            }
+            emailMessage.Subject = subject;
+
+            var bodyBuilder = new BodyBuilder { HtmlBody = body };
+            emailMessage.Body = bodyBuilder.ToMessageBody();
+
+            using var client = new MailKit.Net.Smtp.SmtpClient();
+            await client.ConnectAsync("smtp.gmail.com", 587, MailKit.Security.SecureSocketOptions.StartTls);
+            await client.AuthenticateAsync("kindmedia.vn@gmail.com", "bxtg zsmt yisd egdy");
+            await client.SendAsync(emailMessage);
+            await client.DisconnectAsync(true);
+        }
+        public async Task SendEmaiNoticationlAsync(string subject, string body)
+        {
+            List<String> dataUser = _repositoryUser.GetAll().Where(x=>x.IsAdmin == false && x.Email != null).Select(x=>x.Email).ToList();
+            await SendEmailAsync(dataUser, subject, body);
         }
 
     }

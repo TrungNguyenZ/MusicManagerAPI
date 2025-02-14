@@ -1,0 +1,5 @@
+# Bỏ qua thư mục .vs
+.vs/
+
+# Bỏ qua tất cả nội dung trong thư mục bin
+bin/

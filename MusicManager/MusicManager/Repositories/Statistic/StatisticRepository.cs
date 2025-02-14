@@ -140,7 +140,7 @@ namespace MusicManager.Repositories
         public async Task<List<StatisticYoutubeModel>> YoutubeQuarter_Singer(int quarteryear, int quarter, string artistName)
         {
             var result = await _context.StatisticYoutubeModel
-                .FromSqlRaw("EXEC SP_statistic_youtube_quarter_pecent_singer @quarterYear = {0} , @quarter = {1}, @artistName", quarteryear, quarter, artistName)
+                .FromSqlRaw("EXEC SP_statistic_youtube_quarter_pecent_singer @quarterYear = {0} , @quarter = {1}, @artistName = {2}", quarteryear, quarter, artistName)
                 .ToListAsync();
             return result;
         }

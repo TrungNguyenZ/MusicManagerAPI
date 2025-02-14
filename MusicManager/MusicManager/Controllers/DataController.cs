@@ -24,11 +24,18 @@ namespace MusicManager.Controllers
             _commonService = commonService;
             _redisService = redisService;
         }
-        [HttpGet("test")]
+        [HttpGet("PushFCM")]
         public async Task<IActionResult> Test()
         {
             var token = await _commonService.GetAccessTokenAsync();
             await _commonService.SendNotificationToTopicAsync(token, "Đã có đối soát của Quý I năm 2025", "Vui lòng vào app kiểm tra", "all");
+            var rs = new ResponseBase();
+            return Ok(rs);
+        }
+        [HttpGet("SendEmail")]
+        public async Task<IActionResult> SendEmail()
+        {
+            await _commonService.SendEmaiNoticationlAsync("test", "OK em ơi!");
             var rs = new ResponseBase();
             return Ok(rs);
         }

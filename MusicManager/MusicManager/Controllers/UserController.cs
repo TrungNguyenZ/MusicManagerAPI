@@ -71,6 +71,12 @@ namespace MusicManager.Controllers
                     IsAdmin = user.IsAdmin
                 };
             }
+            else
+            {
+                res.code = 401;
+                res.message = "Mật khẩu đăng nhập không đúng!";
+                return Ok(res);
+            }
             return Ok(res);
 
         }
