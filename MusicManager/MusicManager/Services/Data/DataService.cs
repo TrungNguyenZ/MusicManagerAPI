@@ -23,11 +23,11 @@ namespace MusicManager.Services
         {
             _repository.AddRange(input);
         }
-        public async Task<List<DataModel>> GetDataExcel(int quarter, int year)
+        public async Task<List<DataExportExcelModel>> GetDataExcel(int quarter, int year)
         {
            return await _dataRepository.GetData(quarter, year);
         }   
-        public async Task<List<DataModel>> GetDataExcel(string artistName, int quarter, int year)
+        public async Task<List<DataExportExcelModel>> GetDataExcel(string artistName, int quarter, int year)
         {
             return await _dataRepository.GetData(artistName, quarter, year);
         }

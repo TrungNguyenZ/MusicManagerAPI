@@ -32,4 +32,22 @@ namespace MusicManager.Models
         public int quarter { get; set; }
         public int quarterYear { get; set; }
     }
+    public class DataExportExcelModel
+    {
+        
+        public string marketingOwner { get; set; }
+        public string artistName { get; set; }
+        public string projectTitle { get; set; }
+        public string catalogueNumber { get; set; }
+        public string isrc { get; set; }
+        public string catalogueTitle { get; set; }
+        public string reportedMon { get; set; }
+        public string digitalServiceProvider { get; set; }
+        public string countryCode { get; set; }
+        public string countryDescription { get; set; }
+        public string priceName { get; set; }
+        public string revenueTypeDesc { get; set; }
+        public int sale { get; set; }
+        public decimal netIncome { get; set; }
+    }
 }

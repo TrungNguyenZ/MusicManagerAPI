@@ -20,10 +20,12 @@ namespace MusicManager
         public DbSet<TopChartTrack> TopChartTrack { get; set; }
         public DbSet<DataModel> DataModels { get; set; }
         public DbSet<RefreshToken> RefreshToken { get; set; }
+        public DbSet<DataExportExcelModel> DataExportExcelModel { get; set; }
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<DataExportExcelModel>().HasNoKey();
             modelBuilder.Entity<StatisticTotalModel>().HasNoKey();
             modelBuilder.Entity<DigitalMonthSumModel>().HasNoKey();
             modelBuilder.Entity<DigitalQuarterSumModel>().HasNoKey();

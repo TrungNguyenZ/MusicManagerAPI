@@ -20,18 +20,25 @@ namespace MusicManager.Controllers
             _topChartService = topChartService;
         }
         [HttpGet("Artist")]
-        public async Task<IActionResult> Artist(int type, int quarter, int year)
+        public async Task<IActionResult> Artist(int type, int quarter, int year, int? pageSize)
         {
             try
             {
                 var res = new ResponseData<List<TopChartArtist>>();
+
+                var isAdminClaim = User.FindFirst("isAdmin")?.Value;
+                if (isAdminClaim == "False") {
+                    res.message = "Bạn không có quyền sử dụng API này!";
+                    res.code = 401;
+                    return Ok(res);
+                }
                 if (type == 1)
                 {
-                    res.data = await _topChartService.TopChartArt_Quarter(quarter, year);
+                    res.data = await _topChartService.TopChartArt_Quarter(quarter, year, pageSize ?? 5);
                 }
                 else
                 {
-                    res.data = await _topChartService.TopChartArt_Year(year);
+                    res.data = await _topChartService.TopChartArt_Year(year, pageSize ?? 5);
                 }
                 return Ok(res);
             }
@@ -47,7 +54,7 @@ namespace MusicManager.Controllers
             }
         }
         [HttpGet("Track")]
-        public async Task<IActionResult> Track(int type, int quarter, int year)
+        public async Task<IActionResult> Track(int type, int quarter, int year, int? pageSize)
         {
             try
             {
@@ -57,16 +64,16 @@ namespace MusicManager.Controllers
                 if (type == 1)
                 {
                     if(isAdminClaim == "True")
-                        res.data = await _topChartService.TopChartTrack_Quarter(quarter, year);
+                        res.data = await _topChartService.TopChartTrack_Quarter(quarter, year, pageSize ?? 5);
                     else
-                        res.data = await _topChartService.TopChartTrack_Quarter_Singer(quarter, year, artistName);
+                        res.data = await _topChartService.TopChartTrack_Quarter_Singer(quarter, year, artistName, pageSize ?? 5);
                 }
                 else
                 {
                     if (isAdminClaim == "True")
-                        res.data = await _topChartService.TopChartTrack_Year(year);
+                        res.data = await _topChartService.TopChartTrack_Year(year, pageSize ?? 5);
                     else
-                        res.data = await _topChartService.TopChartTrack_Year_Singer(year, artistName);
+                        res.data = await _topChartService.TopChartTrack_Year_Singer(year, artistName, pageSize ?? 5);
                 }
                 return Ok(res);
             }

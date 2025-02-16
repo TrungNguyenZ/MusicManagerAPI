@@ -193,7 +193,7 @@ namespace MusicManager.Controllers
             var isAdminClaim = User.FindFirst("isAdmin")?.Value;
             var artistName = User.FindFirst("artistName")?.Value;
             var revenuePercentage = User.FindFirst("revenuePercentage").Value;
-            var data = new List<DataModel>();
+            var data = new List<DataExportExcelModel>();
             if (isAdminClaim == "True")
             {
                 data = await _dataService.GetDataExcel(quarter, year);

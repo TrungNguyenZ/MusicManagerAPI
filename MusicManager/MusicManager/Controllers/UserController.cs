@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MusicManager.Models;
@@ -269,11 +270,37 @@ namespace MusicManager.Controllers
             };
             return Ok(res);
         }
-        [HttpPost("ChangePasword")]
+        [Authorize]
+        [HttpGet("Info")]
+        public async Task<IActionResult> Info()
+        {
+            var artistName = User.FindFirst("artistName")?.Value;
+            var user = await _userManager.FindByNameAsync(artistName);
+            var output = new CreateUserRequest
+            {
+                Username = user.UserName,
+                Phone = user.PhoneNumber,
+                Email = user.Email,
+                ArtistName = user.ArtistName,
+                Name = user.Name,
+                RevenuePercentage = user.RevenuePercentage,
+                IsAdmin = user.IsAdmin,
+            };
+            var res = new ResponseData<CreateUserRequest>()
+            {
+                data = output
+            };
+            return Ok(res);
+
+        }
+
+        [Authorize]
+        [HttpPost("ChangePassword")]
         public async Task<IActionResult> ChangePasword(ChangePassword input)
         {
             var res = new ResponseBase();
-            var user = await _userManager.FindByIdAsync(input.Id);
+            var artistName = User.FindFirst("artistName")?.Value;
+            var user = await _userManager.FindByNameAsync(artistName);
             if (user == null)
             {
                 res.code = 410;

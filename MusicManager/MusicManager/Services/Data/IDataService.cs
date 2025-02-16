@@ -6,8 +6,8 @@ namespace MusicManager.Services
     {
         void Create(DataModel input);
         void AddRange(List<DataModel> input);
-        Task<List<DataModel>> GetDataExcel(int quarter, int year);
-        Task<List<DataModel>> GetDataExcel(string artistName, int quarter, int year);
+        Task<List<DataExportExcelModel>> GetDataExcel(int quarter, int year);
+        Task<List<DataExportExcelModel>> GetDataExcel(string artistName, int quarter, int year);
     }
 }
  
