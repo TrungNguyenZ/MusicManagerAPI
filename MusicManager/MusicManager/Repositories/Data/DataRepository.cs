@@ -16,6 +16,7 @@ namespace MusicManager.Repositories.Data
         {
             var result = await _context.DataExportExcelModel
                 .FromSqlRaw("EXEC SP_Data_Quarter @quarter = {0} , @year = {1}", quarter, year)
+                .AsNoTracking()
                 .ToListAsync();
             return result;
         }

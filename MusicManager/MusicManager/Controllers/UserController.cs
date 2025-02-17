@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -274,8 +275,8 @@ namespace MusicManager.Controllers
         [HttpGet("Info")]
         public async Task<IActionResult> Info()
         {
-            var artistName = User.FindFirst("artistName")?.Value;
-            var user = await _userManager.FindByNameAsync(artistName);
+            var name = User.FindFirst(ClaimTypes.Name)?.Value;
+            var user = await _userManager.FindByNameAsync(name);
             var output = new CreateUserRequest
             {
                 Username = user.UserName,
