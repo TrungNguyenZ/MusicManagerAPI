@@ -1,4 +1,5 @@
-﻿using Hangfire;
+﻿using System.Text.Json;
+using Hangfire;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MusicManager.Models;
@@ -6,8 +7,6 @@ using MusicManager.Models.Base;
 using MusicManager.Services;
 using MusicManager.Services.Redis;
 using OfficeOpenXml;
-using StackExchange.Redis;
-using System.Globalization;
 
 namespace MusicManager.Controllers
 {
@@ -94,7 +93,7 @@ namespace MusicManager.Controllers
                     var fileBytes = stream.ToArray();
 
                     // Đẩy công việc vào hàng đợi Hangfire để xử lý nền
-                    BackgroundJob.Enqueue(() =>  ProcessExcel(fileBytes, quarter, year));
+                    BackgroundJob.Enqueue(() => ProcessExcel(fileBytes, quarter, year));
                 }
 
                 return Ok(rs);
@@ -105,7 +104,7 @@ namespace MusicManager.Controllers
             }
         }
         [NonAction]
-        public  async Task ProcessExcel(byte[] fileBytes, int quarter, int year)
+        public async Task ProcessExcel(byte[] fileBytes, int quarter, int year)
         {
             try
             {
@@ -177,9 +176,9 @@ namespace MusicManager.Controllers
 
                 _dataService.AddRange(list);
                 _redisService.ClearCacheContaining("_" + quarter + "_" + year);
-                 var token = await _commonService.GetAccessTokenAsync();
-                 await _commonService.SendNotificationToTopicAsync(token, $"Đã có đối soát của Quý {quarter} năm {year}", "Vui lòng vào app kiểm tra", "all");
-
+                var token = await _commonService.GetAccessTokenAsync();
+                await _commonService.SendNotificationToTopicAsync(token, "KindMedia", $"Đã có đối soát của Quý {quarter} năm {year}", "all");
+                await _commonService.SendEmaiNoticationlAsync("KindMedia", $"Đã có đối soát của Quý {quarter} năm {year}");
             }
             catch (Exception ex)
             {
@@ -194,14 +193,28 @@ namespace MusicManager.Controllers
             var artistName = User.FindFirst("artistName")?.Value;
             var revenuePercentage = User.FindFirst("revenuePercentage").Value;
             var data = new List<DataExportExcelModel>();
-            if (isAdminClaim == "True")
+
+            var cacheKey = isAdminClaim == "True"
+                    ? $"ExportExcel_{quarter}_{year}"
+                    : $"ExportExcel_{quarter}_{year}_{artistName}";
+            var dataRedis = await _redisService.GetAsync(cacheKey);
+            if (dataRedis == null)
             {
-                data = await _dataService.GetDataExcel(quarter, year);
+                if (isAdminClaim == "True")
+                {
+                    data = await _dataService.GetDataExcel(quarter, year);
+                }
+                else
+                {
+                    data = await _dataService.GetDataExcel(artistName, quarter, year);
+                }
+                await _redisService.SetAsync(cacheKey, JsonSerializer.Serialize(data));
             }
             else
             {
-                data = await _dataService.GetDataExcel(artistName, quarter, year);
+                data = Newtonsoft.Json.JsonConvert.DeserializeObject<List<DataExportExcelModel>>(dataRedis);
             }
+
             if (data == null || !data.Any())
             {
                 var res = new ResponseBase()

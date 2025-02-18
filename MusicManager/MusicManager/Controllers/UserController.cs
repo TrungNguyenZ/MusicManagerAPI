@@ -1,4 +1,5 @@
 ﻿using System.Security.Claims;
+using System.Security.Cryptography;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -17,15 +18,21 @@ namespace MusicManager.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ITokenService _tokenService;
         private readonly IRefreshTokenService _refreshTokenService;
+        private readonly ICommonService _commonService;
 
         // Bộ nhớ lưu refresh token
         private static readonly Dictionary<string, List<string>> RefreshTokens = new Dictionary<string, List<string>>();
 
-        public UserController(UserManager<ApplicationUser> userManager, ITokenService tokenService, IRefreshTokenService refreshTokenService)
+        public UserController(
+            UserManager<ApplicationUser> userManager, 
+            ITokenService tokenService, 
+            IRefreshTokenService refreshTokenService,
+            ICommonService commonService)
         {
             _userManager = userManager;
             _tokenService = tokenService;
             _refreshTokenService = refreshTokenService;
+            _commonService = commonService;
         }
 
         [HttpPost("login")]
@@ -300,8 +307,8 @@ namespace MusicManager.Controllers
         public async Task<IActionResult> ChangePasword(ChangePassword input)
         {
             var res = new ResponseBase();
-            var artistName = User.FindFirst("artistName")?.Value;
-            var user = await _userManager.FindByNameAsync(artistName);
+            var name = User.FindFirst(ClaimTypes.Name)?.Value;
+            var user = await _userManager.FindByNameAsync(name);
             if (user == null)
             {
                 res.code = 410;
@@ -348,6 +355,51 @@ namespace MusicManager.Controllers
             res.code = 200;
             res.message = "Đặt lại mật khẩu thành công!";
             return Ok(res);
+        }
+        [HttpGet("reset-password-user")]
+        public async Task<IActionResult> ResetPasswordUser(string email)
+        {
+            var res = new ResponseBase();
+            var user = await _userManager.FindByEmailAsync(email);
+            if (user == null)
+            {
+                res.code = 410;
+                res.message = "Tài khoản không tồn tại!";
+                return Ok(res);
+            }
+
+            // Tạo token đặt lại mật khẩu
+            var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
+
+            // Đặt lại mật khẩu
+            var newPassword = GenerateRandomPassword();
+            var result = await _userManager.ResetPasswordAsync(user, resetToken, newPassword);
+            if (!result.Succeeded)
+            {
+                res.code = 411;
+                res.message = "Đặt lại mật khẩu thất bại!";
+                return Ok(res);
+            }
+
+            res.code = 200;
+            res.message = "Mật khẩu mới đã được gửi vào Email của bạn.";
+            _commonService.SendEmailAsync(new List<string> { email }, "Đặt lại mật khẩu", $"Mật khẩu mới của bạn là: {newPassword}");
+            return Ok(res);
+        }
+        private string GenerateRandomPassword(int length = 12)
+        {
+            const string validChars = "ABCDEFGHJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*?_-";
+            using (var rng = new RNGCryptoServiceProvider())
+            {
+                var buffer = new byte[length];
+                rng.GetBytes(buffer);
+                var password = new char[length];
+                for (int i = 0; i < length; i++)
+                {
+                    password[i] = validChars[buffer[i] % validChars.Length];
+                }
+                return new string(password);
+            }
         }
     }
 
