@@ -41,6 +41,7 @@ namespace MusicManager.Controllers
                 var isAdminClaim = User.FindFirst("isAdmin")?.Value;
                 var artistName = User.FindFirst("artistName")?.Value;
                 var revenuePercentage = User.FindFirst("revenuePercentage").Value;
+                var isEnterprise = User.FindFirst("isEnterprise").Value;
 
                 var cacheKey = isAdminClaim == "True"
                     ? $"Total_{quarter}_{quarterYear}"
@@ -51,7 +52,7 @@ namespace MusicManager.Controllers
                 {
                     res.data = isAdminClaim == "True"
                         ? await _statisticService.GetTotal(quarter, quarterYear)
-                        : await _statisticService.GetTotalBySinger(quarter, quarterYear, artistName, Double.Parse(revenuePercentage));
+                        : await _statisticService.GetTotalBySinger(quarter, quarterYear, artistName, Double.Parse(revenuePercentage), isEnterprise);
 
                     await _redisService.SetAsync(cacheKey, JsonSerializer.Serialize(res.data));
                 }
@@ -83,7 +84,7 @@ namespace MusicManager.Controllers
                 var isAdminClaim = User.FindFirst("isAdmin")?.Value;
                 var artistName = User.FindFirst("artistName")?.Value;
                 var revenuePercentage = User.FindFirst("revenuePercentage").Value;
-
+                var isEnterprise = User.FindFirst("isEnterprise").Value;
                 var cacheKey = isAdminClaim == "True"
                     ? $"Top_{type}_{quarter}_{year}"
                     : $"Top_{type}_{quarter}_{year}_{artistName}";
@@ -93,7 +94,7 @@ namespace MusicManager.Controllers
                 {
                     res.data = isAdminClaim == "True"
                         ? await _statisticService.StatisticTop(type, quarter, year)
-                        : await _statisticService.StatisticTop_Singer(type, quarter, year, artistName, Double.Parse(revenuePercentage));
+                        : await _statisticService.StatisticTop_Singer(type, quarter, year, artistName, Double.Parse(revenuePercentage), isEnterprise);
 
                     await _redisService.SetAsync(cacheKey, JsonSerializer.Serialize(res.data));
                 }
@@ -403,112 +404,177 @@ namespace MusicManager.Controllers
         }
         protected async Task<ResponseData<List<DigitalSumMobileModel>>> DigitalSumMonthMobile(int year, string? language)
         {
-            var res = new ResponseData<List<DigitalSumMobileModel>>();
-            var isAdminClaim = User.FindFirst("isAdmin")?.Value;
-            var artistName = User.FindFirst("artistName")?.Value;
-            var revenuePercentage = User.FindFirst("revenuePercentage")?.Value;
+            bool isAdmin = User.FindFirst("isAdmin")?.Value == "True";
+            bool isEnterprise = User.FindFirst("isEnterprise")?.Value == "True";
+            string artistName = User.FindFirst("artistName")?.Value;
+            string revenuePercentage = User.FindFirst("revenuePercentage")?.Value;
 
-            var data = isAdminClaim == "True"
+            var data = isAdmin
                 ? await _statisticService.Digital_Month_Sum(year)
                 : await _statisticService.Digital_Month_Sum_Singer(year, artistName);
 
             var providers = data.Select(x => x.digitalServiceProvider).Distinct().ToList();
-            var months = Enumerable.Range(1, 12).ToList();
+            var months = Enumerable.Range(1, 12);
 
             var result = months.Select(month => new DigitalSumMobileModel
             {
-                key = language == null ? $"Tháng {month}" : MonthNames.GetMonths(language)[month - 1],
-                revenues = providers.Select(provider => new RevenueModel
+                key = language == null
+                        ? $"Tháng {month}"
+                        : MonthNames.GetMonths(language)[month - 1],
+                revenues = providers.Select(provider =>
                 {
-                    platformName = provider,
-                    value = data
+                    var sum = data
                         .Where(x => x.digitalServiceProvider == provider && x.month == month)
                         .Select(x => x.sum)
-                        .FirstOrDefault() == 0 ? 0 : (isAdminClaim == "True" ? data.Where(x => x.digitalServiceProvider == provider && x.month == month).Select(x => x.sum).FirstOrDefault() : _commonService.GetNetSinger(revenuePercentage, data.Where(x => x.digitalServiceProvider == provider && x.month == month).Select(x => x.sum).FirstOrDefault()))
+                        .FirstOrDefault();
+                    return new RevenueModel
+                    {
+                        platformName = provider,
+                        value = _commonService.GetNetEnterprise(sum) == 0
+                                  ? 0
+                                  : (isAdmin ? _commonService.GetNetEnterprise(sum) : (isEnterprise
+                                      ? _commonService.GetNetEnterprise(sum)
+                                      : _commonService.GetNetSinger(revenuePercentage, sum)))
+                    };
                 }).ToList()
             }).ToList();
-            res.data = result;
-            return res;
+
+            return new ResponseData<List<DigitalSumMobileModel>> { data = result };
         }
+
         protected async Task<ResponseData<List<DigitalSumMobileModel>>> DigitalSumQuarterMobile(int year, string? language)
         {
-            var res = new ResponseData<List<DigitalSumMobileModel>>();
-            var isAdminClaim = User.FindFirst("isAdmin")?.Value;
-            var artistName = User.FindFirst("artistName")?.Value;
-            var revenuePercentage = User.FindFirst("revenuePercentage")?.Value;
+            bool isAdmin = User.FindFirst("isAdmin")?.Value == "True";
+            bool isEnterprise = User.FindFirst("isEnterprise")?.Value == "True";
+            string artistName = User.FindFirst("artistName")?.Value;
+            string revenuePercentage = User.FindFirst("revenuePercentage")?.Value;
 
-            var data = isAdminClaim == "True"
+            var data = isAdmin
+                ? await _statisticService.Digital_Quarter_Sum(year)
+                : await _statisticService.Digital_Quarter_Sum_Singer(year, artistName);
+
+            var providers = data.Select(x => x.digitalServiceProvider).Distinct().ToList();
+            var quarters = Enumerable.Range(1, 4);
+
+            var result = quarters.Select(quarter => new DigitalSumMobileModel
+            {
+                key = language == null
+                        ? $"Quý {quarter}"
+                        : MonthNames.GetQuarter(language)[quarter - 1],
+                revenues = providers.Select(provider =>
+                {
+                    var sum = data
+                        .Where(x => x.digitalServiceProvider == provider && x.quarter == quarter)
+                        .Select(x => x.sum)
+                        .FirstOrDefault();
+                    return new RevenueModel
+                    {
+                        platformName = provider,
+                        value = sum == 0
+                                  ? 0
+                                  : (isAdmin ? _commonService.GetNetEnterprise(sum) : (isEnterprise
+                                      ? _commonService.GetNetEnterprise(sum)
+                                      : _commonService.GetNetSinger(revenuePercentage, sum)))
+                    };
+                }).ToList()
+            }).ToList();
+
+            return new ResponseData<List<DigitalSumMobileModel>> { data = result };
+        }
+
+        protected async Task<ResponseData<List<DigitalSumMobileModel>>> DigitalSumYearMobile()
+        {
+            bool isAdmin = User.FindFirst("isAdmin")?.Value == "True";
+            bool isEnterprise = User.FindFirst("isEnterprise")?.Value == "True";
+            string artistName = User.FindFirst("artistName")?.Value;
+            string revenuePercentage = User.FindFirst("revenuePercentage")?.Value;
+
+            var data = isAdmin
+                ? await _statisticService.Digital_Year_Sum()
+                : await _statisticService.Digital_Year_Sum_Singer(artistName);
+
+            var providers = data.Select(x => x.digitalServiceProvider).Distinct().ToList();
+            var years = Enumerable.Range(DateTime.Now.Year - 4, 5);
+
+            var result = years.Select(year => new DigitalSumMobileModel
+            {
+                key = year.ToString(),
+                revenues = providers.Select(provider =>
+                {
+                    var sum = data
+                        .Where(x => x.digitalServiceProvider == provider && x.quarterYear == year)
+                        .Select(x => x.sum)
+                        .FirstOrDefault();
+                    return new RevenueModel
+                    {
+                        platformName = provider,
+                        value = sum == 0
+                                  ? 0
+                                  : (isAdmin ? _commonService.GetNetEnterprise(sum) : (isEnterprise
+                                      ? _commonService.GetNetEnterprise(sum)
+                                      : _commonService.GetNetSinger(revenuePercentage, sum)))
+                    };
+                }).ToList()
+            }).ToList();
+
+            return new ResponseData<List<DigitalSumMobileModel>> { data = result };
+        }
+
+
+        protected async Task<ResponseData<StatisticSumModel>> DigitalSumMonth(int year, string? language)
+        {
+            var userClaims = new
+            {
+                IsAdmin = User.FindFirst("isAdmin")?.Value == "True",
+                ArtistName = User.FindFirst("artistName")?.Value,
+                RevenuePercentage = User.FindFirst("revenuePercentage")?.Value,
+                IsEnterprise = User.FindFirst("isEnterprise")?.Value == "True"
+            };
+
+            var data = userClaims.IsAdmin
+                ? await _statisticService.Digital_Month_Sum(year)
+                : await _statisticService.Digital_Month_Sum_Singer(year, userClaims.ArtistName);
+
+            var providers = data.Select(x => x.digitalServiceProvider).Distinct();
+            var months = Enumerable.Range(1, 12);
+
+            var dataChart = providers.Select(provider => new StatisticDataSumModel
+            {
+                Name = provider,
+                Data = months.Select(month =>
+                {
+                    var sum = data.FirstOrDefault(x => x.digitalServiceProvider == provider && x.month == month)?.sum ?? 0;
+                    return userClaims.IsAdmin ? _commonService.GetNetEnterprise(sum) : userClaims.IsEnterprise
+                        ? _commonService.GetNetEnterprise(sum)
+                        : _commonService.GetNetSinger(userClaims.RevenuePercentage, sum);
+                }).ToList()
+            }).ToList();
+
+            return new ResponseData<StatisticSumModel>
+            {
+                data = new StatisticSumModel
+                {
+                    Data = dataChart,
+                    Categories = MonthNames.GetMonths(language ?? "vi")
+                }
+            };
+        }
+
+        protected async Task<ResponseData<StatisticSumModel>> DigitalSumQuarter(int year, string? language)
+        {
+            bool isAdmin = User.FindFirst("isAdmin")?.Value == "True";
+            bool isEnterprise = User.FindFirst("isEnterprise")?.Value == "True";
+            string artistName = User.FindFirst("artistName")?.Value;
+            string revenuePercentage = User.FindFirst("revenuePercentage")?.Value;
+
+            var data = isAdmin
                 ? await _statisticService.Digital_Quarter_Sum(year)
                 : await _statisticService.Digital_Quarter_Sum_Singer(year, artistName);
 
             var providers = data.Select(x => x.digitalServiceProvider).Distinct().ToList();
             var quarters = Enumerable.Range(1, 4).ToList();
-
-            var result = quarters.Select(quarter => new DigitalSumMobileModel
-            {
-                key = language == null ? $"Quý {quarter}" : MonthNames.GetQuarter(language)[quarter - 1],
-                revenues = providers.Select(provider => new RevenueModel
-                {
-                    platformName = provider,
-                    value = data
-                        .Where(x => x.digitalServiceProvider == provider && x.quarter == quarter)
-                        .Select(x => x.sum)
-                        .FirstOrDefault() == 0 ? 0 : (isAdminClaim == "True" ? data.Where(x => x.digitalServiceProvider == provider && x.quarter == quarter).Select(x => x.sum).FirstOrDefault() : _commonService.GetNetSinger(revenuePercentage, data.Where(x => x.digitalServiceProvider == provider && x.quarter == quarter).Select(x => x.sum).FirstOrDefault()))
-                }).ToList()
-            }).ToList();
-
-            res.data = result;
-            return res;
-        }
-        protected async Task<ResponseData<List<DigitalSumMobileModel>>> DigitalSumYearMobile()
-        {
-            var res = new ResponseData<List<DigitalSumMobileModel>>();
-            var isAdminClaim = User.FindFirst("isAdmin")?.Value;
-            var artistName = User.FindFirst("artistName")?.Value;
-            var revenuePercentage = User.FindFirst("revenuePercentage")?.Value;
-
-            var data = isAdminClaim == "True"
-                ? await _statisticService.Digital_Year_Sum()
-                : await _statisticService.Digital_Year_Sum_Singer(artistName);
-
-            var providers = data.Select(x => x.digitalServiceProvider).Distinct().ToList();
-            var years = Enumerable.Range(DateTime.Now.Year - 4, 5).ToList();
-
-            var result = years.Select(year => new DigitalSumMobileModel
-            {
-                key = year.ToString(),
-                revenues = providers.Select(provider => new RevenueModel
-                {
-                    platformName = provider,
-                    value = data
-                        .Where(x => x.digitalServiceProvider == provider && x.quarterYear == year)
-                        .Select(x => x.sum)
-                        .FirstOrDefault() == 0 ? 0 : (isAdminClaim == "True" ? data.Where(x => x.digitalServiceProvider == provider && x.quarterYear == year).Select(x => x.sum).FirstOrDefault() : _commonService.GetNetSinger(revenuePercentage, data.Where(x => x.digitalServiceProvider == provider && x.quarterYear == year).Select(x => x.sum).FirstOrDefault()))
-                }).ToList()
-            }).ToList();
-
-            res.data = result;
-            return res;
-        }
-
-        protected async Task<ResponseData<StatisticSumModel>> DigitalSumMonth(int year, string? language)
-        {
-            var isAdminClaim = User.FindFirst("isAdmin")?.Value;
-            var artistName = User.FindFirst("artistName")?.Value;
-            var revenuePercentage = User.FindFirst("revenuePercentage").Value;
-
             var dataChart = new List<StatisticDataSumModel>();
-            var data = new List<DigitalMonthSumModel>();
-            if (isAdminClaim == "True")
-            {
-                data = await _statisticService.Digital_Month_Sum(year);
-            }
-            else
-            {
-                data = await _statisticService.Digital_Month_Sum_Singer(year, artistName);
-            }
-            var providers = data.Select(x => x.digitalServiceProvider).Distinct().ToList();
-            var months = Enumerable.Range(1, 12).ToList();
+
             foreach (var provider in providers)
             {
                 var seriesData = new StatisticDataSumModel
@@ -516,95 +582,53 @@ namespace MusicManager.Controllers
                     Name = provider,
                     Data = new List<long>()
                 };
-                foreach (var month in months)
-                {
-                    // Lấy dữ liệu cho từng tháng và provider
-                    var sum = data
-                        .Where(x => x.digitalServiceProvider == provider && x.month == month)
-                        .Select(x => x.sum)
-                        .FirstOrDefault();
-                    seriesData.Data.Add(sum == 0 ? 0 : (isAdminClaim == "True" ? sum : _commonService.GetNetSinger(revenuePercentage, sum)));
-                }
 
-                dataChart.Add(seriesData);
-            }
-
-            var res = new ResponseData<StatisticSumModel>()
-            {
-                data = new StatisticSumModel()
-                {
-                    Data = dataChart,
-                    Categories = language == null ? MonthNames.GetMonths("vi") : MonthNames.GetMonths(language)
-                }
-            };
-            return res;
-        }
-
-        protected async Task<ResponseData<StatisticSumModel>> DigitalSumQuarter(int year, string? language)
-        {
-            var isAdminClaim = User.FindFirst("isAdmin")?.Value;
-            var artistName = User.FindFirst("artistName")?.Value;
-            var revenuePercentage = User.FindFirst("revenuePercentage").Value;
-
-            var dataChart = new List<StatisticDataSumModel>();
-            var data = new List<DigitalQuarterSumModel>();
-            if (isAdminClaim == "True")
-            {
-                data = await _statisticService.Digital_Quarter_Sum(year);
-            }
-            else
-            {
-                data = await _statisticService.Digital_Quarter_Sum_Singer(year, artistName);
-            }
-            var providers = data.Select(x => x.digitalServiceProvider).Distinct().ToList();
-            var quarters = Enumerable.Range(1, 4).ToList();
-            foreach (var provider in providers)
-            {
-                var seriesData = new StatisticDataSumModel
-                {
-                    Name = provider,
-                    Data = new List<long>()
-                };
                 foreach (var quarter in quarters)
                 {
                     var sum = data
                         .Where(x => x.digitalServiceProvider == provider && x.quarter == quarter)
                         .Select(x => x.sum)
                         .FirstOrDefault();
-                    seriesData.Data.Add(sum == 0 ? 0 : (isAdminClaim == "True" ? sum : _commonService.GetNetSinger(revenuePercentage, sum)));
+
+                    long value = sum == 0
+                        ? 0
+                        : isAdmin
+                            ? _commonService.GetNetEnterprise(sum)
+                            : (isEnterprise
+                                ? _commonService.GetNetEnterprise(sum)
+                                : _commonService.GetNetSinger(revenuePercentage, sum));
+
+                    seriesData.Data.Add(value);
                 }
 
                 dataChart.Add(seriesData);
             }
 
-            var res = new ResponseData<StatisticSumModel>()
+            return new ResponseData<StatisticSumModel>
             {
-                data = new StatisticSumModel()
+                data = new StatisticSumModel
                 {
                     Data = dataChart,
                     Categories = language == null ? MonthNames.GetQuarter("vi") : MonthNames.GetQuarter(language)
                 }
             };
-            return res;
         }
+
         protected async Task<ResponseData<StatisticSumModel>> DigitalSumYear()
         {
-            var isAdminClaim = User.FindFirst("isAdmin")?.Value;
-            var artistName = User.FindFirst("artistName")?.Value;
-            var revenuePercentage = User.FindFirst("revenuePercentage").Value;
+            bool isAdmin = User.FindFirst("isAdmin")?.Value == "True";
+            bool isEnterprise = User.FindFirst("isEnterprise")?.Value == "True";
+            string artistName = User.FindFirst("artistName")?.Value;
+            string revenuePercentage = User.FindFirst("revenuePercentage")?.Value;
 
-            var dataChart = new List<StatisticDataSumModel>();
-            var data = new List<DigitalYearSumModel>();
-            if (isAdminClaim == "True")
-            {
-                data = await _statisticService.Digital_Year_Sum();
-            }
-            else
-            {
-                data = await _statisticService.Digital_Year_Sum_Singer(artistName);
-            }
+            var data = isAdmin
+                ? await _statisticService.Digital_Year_Sum()
+                : await _statisticService.Digital_Year_Sum_Singer(artistName);
+
             var providers = data.Select(x => x.digitalServiceProvider).Distinct().ToList();
-            var years = Enumerable.Range((DateTime.Now.Year - 4), 5).ToList();
+            var years = Enumerable.Range(DateTime.Now.Year - 4, 5).ToList();
+            var dataChart = new List<StatisticDataSumModel>();
+
             foreach (var provider in providers)
             {
                 var seriesData = new StatisticDataSumModel
@@ -612,243 +636,248 @@ namespace MusicManager.Controllers
                     Name = provider,
                     Data = new List<long>()
                 };
+
                 foreach (var year in years)
                 {
                     var sum = data
                         .Where(x => x.digitalServiceProvider == provider && x.quarterYear == year)
                         .Select(x => x.sum)
                         .FirstOrDefault();
-                    seriesData.Data.Add(sum == 0 ? 0 : (isAdminClaim == "True" ? sum : _commonService.GetNetSinger(revenuePercentage, sum)));
+
+                    long value = sum == 0
+                        ? 0
+                        : isAdmin
+                            ? _commonService.GetNetEnterprise(sum)
+                            : (isEnterprise
+                                ? _commonService.GetNetEnterprise(sum)
+                                : _commonService.GetNetSinger(revenuePercentage, sum));
+
+                    seriesData.Data.Add(value);
                 }
 
                 dataChart.Add(seriesData);
             }
 
-            var res = new ResponseData<StatisticSumModel>()
+            return new ResponseData<StatisticSumModel>
             {
-                data = new StatisticSumModel()
+                data = new StatisticSumModel
                 {
                     Data = dataChart,
-                    Categories = years.ConvertAll<string>(x => x.ToString())
+                    Categories = years.ConvertAll(x => x.ToString())
                 }
             };
-            return res;
         }
+
         protected async Task<ResponseData<StatisticDataPercentModel>> DigitalPercentYear(int year)
         {
-            var isAdminClaim = User.FindFirst("isAdmin")?.Value;
-            var artistName = User.FindFirst("artistName")?.Value;
-            var revenuePercentage = User.FindFirst("revenuePercentage").Value;
+            bool isAdmin = User.FindFirst("isAdmin")?.Value == "True";
+            bool isEnterprise = User.FindFirst("isEnterprise")?.Value == "True";
+            string artistName = User.FindFirst("artistName")?.Value;
+            string revenuePercentage = User.FindFirst("revenuePercentage")?.Value;
+
+            var data = isAdmin
+                ? await _statisticService.Digital_year_Percent(year)
+                : await _statisticService.Digital_Year_Percent_Singer(year, artistName);
 
             var dataChart = new StatisticDataPercentModel();
-            var data = new List<DigitalYearPercentModel>();
-            if (isAdminClaim == "True")
-            {
-                data = await _statisticService.Digital_year_Percent(year);
-            }
-            else
-            {
-                data = await _statisticService.Digital_Year_Percent_Singer(year, artistName);
-            }
-            if (data != null && data.Count() > 0)
+
+            if (data != null && data.Any())
             {
                 dataChart.labels = data.Select(x => x.digitalServiceProvider).ToList();
-                dataChart.data = data.Select(x => (isAdminClaim == "True" ? x.sum : _commonService.GetNetSinger(revenuePercentage, x.sum))).ToList();
+                dataChart.data = data.Select(x =>
+                    isAdmin
+                        ? _commonService.GetNetEnterprise(x.sum)
+                        : (isEnterprise
+                            ? _commonService.GetNetEnterprise(x.sum)
+                            : _commonService.GetNetSinger(revenuePercentage, x.sum))
+                ).ToList();
             }
-            var res = new ResponseData<StatisticDataPercentModel>()
+
+            return new ResponseData<StatisticDataPercentModel>
             {
                 data = dataChart
             };
-            return res;
         }
+
         protected async Task<ResponseData<StatisticDataPercentModel>> DigitalPercentQuarter(int quarter, int year)
         {
-            var isAdminClaim = User.FindFirst("isAdmin")?.Value;
-            var artistName = User.FindFirst("artistName")?.Value;
-            var revenuePercentage = User.FindFirst("revenuePercentage").Value;
+            bool isAdmin = User.FindFirst("isAdmin")?.Value == "True";
+            bool isEnterprise = User.FindFirst("isEnterprise")?.Value == "True";
+            string artistName = User.FindFirst("artistName")?.Value;
+            string revenuePercentage = User.FindFirst("revenuePercentage")?.Value;
+
+            var data = isAdmin
+                ? await _statisticService.Digital_Quarter_Percent(quarter, year)
+                : await _statisticService.Digital_Quarter_Percent_Singer(quarter, year, artistName);
 
             var dataChart = new StatisticDataPercentModel();
-            var data = new List<DigitalQuarterPercentModel>();
-            if (isAdminClaim == "True")
-            {
-                data = await _statisticService.Digital_Quarter_Percent(quarter, year);
-            }
-            else
-            {
-                data = await _statisticService.Digital_Quarter_Percent_Singer(quarter, year, artistName);
-            }
-            if (data != null && data.Count() > 0)
+
+            if (data != null && data.Any())
             {
                 dataChart.labels = data.Select(x => x.digitalServiceProvider).ToList();
-                dataChart.data = data.Select(x => (isAdminClaim == "True" ? x.sum : _commonService.GetNetSinger(revenuePercentage, x.sum))).ToList();
+                dataChart.data = data.Select(x => isAdmin
+                    ? _commonService.GetNetEnterprise(x.sum)
+                    : (isEnterprise
+                        ? _commonService.GetNetEnterprise(x.sum)
+                        : _commonService.GetNetSinger(revenuePercentage, x.sum))).ToList();
             }
-            var res = new ResponseData<StatisticDataPercentModel>()
-            {
-                data = dataChart
-            };
-            return res;
+
+            return new ResponseData<StatisticDataPercentModel> { data = dataChart };
         }
         protected async Task<ResponseData<StatisticDataPercentModel>> CountryPercentQuarter(int quarter, int year)
         {
-            var isAdminClaim = User.FindFirst("isAdmin")?.Value;
-            var artistName = User.FindFirst("artistName")?.Value;
-            var revenuePercentage = User.FindFirst("revenuePercentage").Value;
+            bool isAdmin = User.FindFirst("isAdmin")?.Value == "True";
+            bool isEnterprise = User.FindFirst("isEnterprise")?.Value == "True";
+            string artistName = User.FindFirst("artistName")?.Value;
+            string revenuePercentage = User.FindFirst("revenuePercentage")?.Value;
+
+            var data = isAdmin
+                ? await _statisticService.Country_Quarter_Percent(quarter, year)
+                : await _statisticService.Country_Quarter_Percent_Singer(quarter, year, artistName);
 
             var dataChart = new StatisticDataPercentModel();
-            var data = new List<CountryPercentModel>();
-            if (isAdminClaim == "True")
-            {
-                data = await _statisticService.Country_Quarter_Percent(quarter, year);
-            }
-            else
-            {
-                data = await _statisticService.Country_Quarter_Percent_Singer(quarter, year, artistName);
-            }
-            if (data != null && data.Count() > 0)
+
+            if (data != null && data.Any())
             {
                 dataChart.labels = data.Select(x => x.countryCode).ToList();
-                dataChart.data = data.Select(x => (isAdminClaim == "True" ? x.sum : _commonService.GetNetSinger(revenuePercentage, x.sum))).ToList();
+                dataChart.data = data.Select(x => isAdmin
+                    ? _commonService.GetNetEnterprise(x.sum)
+                    : (isEnterprise
+                        ? _commonService.GetNetEnterprise(x.sum)
+                        : _commonService.GetNetSinger(revenuePercentage, x.sum))).ToList();
             }
-            var res = new ResponseData<StatisticDataPercentModel>()
-            {
-                data = dataChart
-            };
-            return res;
+
+            return new ResponseData<StatisticDataPercentModel> { data = dataChart };
         }
+
         protected async Task<ResponseData<StatisticDataPercentModel>> CountryPercentYear(int year)
         {
-            var isAdminClaim = User.FindFirst("isAdmin")?.Value;
-            var artistName = User.FindFirst("artistName")?.Value;
-            var revenuePercentage = User.FindFirst("revenuePercentage").Value;
+            bool isAdmin = User.FindFirst("isAdmin")?.Value == "True";
+            bool isEnterprise = User.FindFirst("isEnterprise")?.Value == "True";
+            string artistName = User.FindFirst("artistName")?.Value;
+            string revenuePercentage = User.FindFirst("revenuePercentage")?.Value;
+
+            var data = isAdmin
+                ? await _statisticService.Country_Year_Percent(year)
+                : await _statisticService.Country_Year_Percent_Singer(year, artistName);
 
             var dataChart = new StatisticDataPercentModel();
-            var data = new List<CountryPercentModel>();
-            if (isAdminClaim == "True")
-            {
-                data = await _statisticService.Country_Year_Percent(year);
-            }
-            else
-            {
-                data = await _statisticService.Country_Year_Percent_Singer(year, artistName);
-            }
-            if (data != null && data.Count() > 0)
+
+            if (data != null && data.Any())
             {
                 dataChart.labels = data.Select(x => x.countryCode).ToList();
-                dataChart.data = data.Select(x => (isAdminClaim == "True" ? x.sum : _commonService.GetNetSinger(revenuePercentage, x.sum))).ToList();
+                dataChart.data = data.Select(x => isAdmin
+                    ? _commonService.GetNetEnterprise(x.sum)
+                    : (isEnterprise
+                        ? _commonService.GetNetEnterprise(x.sum)
+                        : _commonService.GetNetSinger(revenuePercentage, x.sum))).ToList();
             }
-            var res = new ResponseData<StatisticDataPercentModel>()
-            {
-                data = dataChart
-            };
-            return res;
+
+            return new ResponseData<StatisticDataPercentModel> { data = dataChart };
         }
+
         protected async Task<ResponseData<StatisticDataPercentModel>> PriceQuarter(int year, int quarter)
         {
-            var isAdminClaim = User.FindFirst("isAdmin")?.Value;
-            var artistName = User.FindFirst("artistName")?.Value;
-            var revenuePercentage = User.FindFirst("revenuePercentage").Value;
+            bool isAdmin = User.FindFirst("isAdmin")?.Value == "True";
+            bool isEnterprise = User.FindFirst("isEnterprise")?.Value == "True";
+            string artistName = User.FindFirst("artistName")?.Value;
+            string revenuePercentage = User.FindFirst("revenuePercentage")?.Value;
+
+            var data = isAdmin
+                ? await _statisticService.PriceQuarter(year, quarter)
+                : await _statisticService.PriceQuarter_Singer(year, quarter, artistName);
 
             var dataChart = new StatisticDataPercentModel();
-            var data = new List<StatisticPriceNameModel>();
-            if (isAdminClaim == "True")
-            {
-                data = await _statisticService.PriceQuarter(year, quarter);
-            }
-            else
-            {
-                data = await _statisticService.PriceQuarter_Singer(year, quarter, artistName);
-            }
-            if (data != null && data.Count() > 0)
+            if (data != null && data.Any())
             {
                 dataChart.labels = data.Select(x => x.priceName).ToList();
-                dataChart.data = data.Select(x => (isAdminClaim == "True" ? x.sum : _commonService.GetNetSinger(revenuePercentage, x.sum))).ToList();
+                dataChart.data = data.Select(x => isAdmin
+                    ? _commonService.GetNetEnterprise(x.sum)
+                    : (isEnterprise
+                        ? _commonService.GetNetEnterprise(x.sum)
+                        : _commonService.GetNetSinger(revenuePercentage, x.sum))
+                ).ToList();
             }
-            var res = new ResponseData<StatisticDataPercentModel>()
-            {
-                data = dataChart
-            };
-            return res;
+
+            return new ResponseData<StatisticDataPercentModel> { data = dataChart };
         }
+
         protected async Task<ResponseData<StatisticDataPercentModel>> PriceYear(int year)
         {
-            var isAdminClaim = User.FindFirst("isAdmin")?.Value;
-            var artistName = User.FindFirst("artistName")?.Value;
-            var revenuePercentage = User.FindFirst("revenuePercentage").Value;
+            bool isAdmin = User.FindFirst("isAdmin")?.Value == "True";
+            bool isEnterprise = User.FindFirst("isEnterprise")?.Value == "True";
+            string artistName = User.FindFirst("artistName")?.Value;
+            string revenuePercentage = User.FindFirst("revenuePercentage")?.Value;
+
+            var data = isAdmin
+                ? await _statisticService.PriceYear(year)
+                : await _statisticService.PriceYear_Singer(year, artistName);
 
             var dataChart = new StatisticDataPercentModel();
-            var data = new List<StatisticPriceNameModel>();
-            if (isAdminClaim == "True")
-            {
-                data = await _statisticService.PriceYear(year);
-            }
-            else
-            {
-                data = await _statisticService.PriceYear_Singer(year, artistName);
-            }
-            if (data != null && data.Count() > 0)
+            if (data != null && data.Any())
             {
                 dataChart.labels = data.Select(x => x.priceName).ToList();
-                dataChart.data = data.Select(x => (isAdminClaim == "True" ? x.sum : _commonService.GetNetSinger(revenuePercentage, x.sum))).ToList();
+                dataChart.data = data.Select(x => isAdmin
+                    ? _commonService.GetNetEnterprise(x.sum)
+                    : (isEnterprise
+                        ? _commonService.GetNetEnterprise(x.sum)
+                        : _commonService.GetNetSinger(revenuePercentage, x.sum))
+                ).ToList();
             }
-            var res = new ResponseData<StatisticDataPercentModel>()
-            {
-                data = dataChart
-            };
-            return res;
+
+            return new ResponseData<StatisticDataPercentModel> { data = dataChart };
         }
+
         protected async Task<ResponseData<StatisticDataPercentModel>> YoutubeQuarter(int year, int quarter)
         {
-            var isAdminClaim = User.FindFirst("isAdmin")?.Value;
-            var artistName = User.FindFirst("artistName")?.Value;
-            var revenuePercentage = User.FindFirst("revenuePercentage").Value;
+            bool isAdmin = User.FindFirst("isAdmin")?.Value == "True";
+            bool isEnterprise = User.FindFirst("isEnterprise")?.Value == "True";
+            string artistName = User.FindFirst("artistName")?.Value;
+            string revenuePercentage = User.FindFirst("revenuePercentage")?.Value;
+
+            var data = isAdmin
+                ? await _statisticService.YoutubeQuarter(year, quarter)
+                : await _statisticService.YoutubeQuarter_Singer(year, quarter, artistName);
 
             var dataChart = new StatisticDataPercentModel();
-            var data = new List<StatisticYoutubeModel>();
-            if (isAdminClaim == "True")
-            {
-                data = await _statisticService.YoutubeQuarter(year, quarter);
-            }
-            else
-            {
-                data = await _statisticService.YoutubeQuarter_Singer(year, quarter, artistName);
-            }
-            if (data != null && data.Count() > 0)
+            if (data != null && data.Any())
             {
                 dataChart.labels = data.Select(x => x.revenue).ToList();
-                dataChart.data = data.Select(x => (isAdminClaim == "True" ? x.sum : _commonService.GetNetSinger(revenuePercentage, x.sum))).ToList();
+                dataChart.data = data.Select(x => isAdmin
+                    ? _commonService.GetNetEnterprise(x.sum)
+                    : (isEnterprise
+                        ? _commonService.GetNetEnterprise(x.sum)
+                        : _commonService.GetNetSinger(revenuePercentage, x.sum))
+                ).ToList();
             }
-            var res = new ResponseData<StatisticDataPercentModel>()
-            {
-                data = dataChart
-            };
-            return res;
+
+            return new ResponseData<StatisticDataPercentModel> { data = dataChart };
         }
+
         protected async Task<ResponseData<StatisticDataPercentModel>> YoutubeYear(int year)
         {
-            var isAdminClaim = User.FindFirst("isAdmin")?.Value;
-            var artistName = User.FindFirst("artistName")?.Value;
-            var revenuePercentage = User.FindFirst("revenuePercentage").Value;
+            bool isAdmin = User.FindFirst("isAdmin")?.Value == "True";
+            bool isEnterprise = User.FindFirst("isEnterprise")?.Value == "True";
+            string artistName = User.FindFirst("artistName")?.Value;
+            string revenuePercentage = User.FindFirst("revenuePercentage")?.Value;
+
+            var data = isAdmin
+                ? await _statisticService.YoutubeYear(year)
+                : await _statisticService.YoutubeYear_Singer(year, artistName);
 
             var dataChart = new StatisticDataPercentModel();
-            var data = new List<StatisticYoutubeModel>();
-            if (isAdminClaim == "True")
-            {
-                data = await _statisticService.YoutubeYear(year);
-            }
-            else
-            {
-                data = await _statisticService.YoutubeYear_Singer(year, artistName);
-            }
-            if (data != null && data.Count() > 0)
+            if (data != null && data.Any())
             {
                 dataChart.labels = data.Select(x => x.revenue).ToList();
-                dataChart.data = data.Select(x => (isAdminClaim == "True" ? x.sum : _commonService.GetNetSinger(revenuePercentage, x.sum))).ToList();
+                dataChart.data = data.Select(x => isAdmin
+                    ? _commonService.GetNetEnterprise(x.sum)
+                    : (isEnterprise
+                        ? _commonService.GetNetEnterprise(x.sum)
+                        : _commonService.GetNetSinger(revenuePercentage, x.sum))
+                ).ToList();
             }
-            var res = new ResponseData<StatisticDataPercentModel>()
-            {
-                data = dataChart
-            };
-            return res;
+
+            return new ResponseData<StatisticDataPercentModel> { data = dataChart };
         }
 
     }

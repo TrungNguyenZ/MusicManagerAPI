@@ -18,6 +18,7 @@ namespace MusicManager.Models
         public double RevenuePercentage { get; set; }
         public bool IsAdmin { get; set; }
         public bool Active { get; set; } = false;
+        public bool IsEnterprise { get; set; } = false;
         //public string Password { get; set; }
 
     }
