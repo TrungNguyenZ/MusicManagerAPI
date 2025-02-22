@@ -1,4 +1,5 @@
-﻿using Hangfire;
+﻿using System.Text.Json;
+using Hangfire;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MusicManager.Models;
@@ -6,8 +7,6 @@ using MusicManager.Models.Base;
 using MusicManager.Services;
 using MusicManager.Services.Redis;
 using OfficeOpenXml;
-using StackExchange.Redis;
-using System.Globalization;
 
 namespace MusicManager.Controllers
 {
@@ -105,7 +104,7 @@ namespace MusicManager.Controllers
             }
         }
         [NonAction]
-        public  async Task ProcessExcel(byte[] fileBytes, int quarter, int year)
+        public async Task ProcessExcel(byte[] fileBytes, int quarter, int year)
         {
             try
             {
@@ -177,9 +176,9 @@ namespace MusicManager.Controllers
 
                 _dataService.AddRange(list);
                 _redisService.ClearCacheContaining("_" + quarter + "_" + year);
-                 var token = await _commonService.GetAccessTokenAsync();
-                 await _commonService.SendNotificationToTopicAsync(token, $"Đã có đối soát của Quý {quarter} năm {year}", "Vui lòng vào app kiểm tra", "all");
-
+                var token = await _commonService.GetAccessTokenAsync();
+                await _commonService.SendNotificationToTopicAsync(token, "KindMedia", $"Đã có đối soát của Quý {quarter} năm {year}", "all");
+                await _commonService.SendEmaiNoticationlAsync("KindMedia", $"Đã có đối soát của Quý {quarter} năm {year}");
             }
             catch (Exception ex)
             {
@@ -193,15 +192,30 @@ namespace MusicManager.Controllers
             var isAdminClaim = User.FindFirst("isAdmin")?.Value;
             var artistName = User.FindFirst("artistName")?.Value;
             var revenuePercentage = User.FindFirst("revenuePercentage").Value;
+            bool isEnterprise = User.FindFirst("isEnterprise")?.Value == "True";
             var data = new List<DataExportExcelModel>();
-            if (isAdminClaim == "True")
+
+            var cacheKey = isAdminClaim == "True"
+                    ? $"ExportExcel_{quarter}_{year}"
+                    : $"ExportExcel_{quarter}_{year}_{artistName}";
+            var dataRedis = await _redisService.GetAsync(cacheKey);
+            if (dataRedis == null)
             {
-                data = await _dataService.GetDataExcel(quarter, year);
+                if (isAdminClaim == "True")
+                {
+                    data = await _dataService.GetDataExcel(quarter, year);
+                }
+                else
+                {
+                    data = await _dataService.GetDataExcel(artistName, quarter, year);
+                }
+                await _redisService.SetAsync(cacheKey, JsonSerializer.Serialize(data));
             }
             else
             {
-                data = await _dataService.GetDataExcel(artistName, quarter, year);
+                data = Newtonsoft.Json.JsonConvert.DeserializeObject<List<DataExportExcelModel>>(dataRedis);
             }
+
             if (data == null || !data.Any())
             {
                 var res = new ResponseBase()
@@ -249,9 +263,9 @@ namespace MusicManager.Controllers
                 worksheet.Cells[i + startRow + 1, 11].Value = data[i].priceName;
                 worksheet.Cells[i + startRow + 1, 12].Value = data[i].revenueTypeDesc;
                 worksheet.Cells[i + startRow + 1, 13].Value = data[i].sale;
-                if (isAdminClaim == "True")
+                if (isAdminClaim == "True" || isEnterprise)
                 {
-                    worksheet.Cells[i + startRow + 1, 14].Value = (long)data[i].netIncome;
+                    worksheet.Cells[i + startRow + 1, 14].Value = (long)_commonService.GetNetEnterprise(data[i].netIncome);
                 }
                 else
                 {

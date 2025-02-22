@@ -25,6 +25,7 @@ public class TokenService : ITokenService
             new Claim("isAdmin", user.IsAdmin.ToString()),
             new Claim("artistName", user.ArtistName?.ToString() ?? ""),
             new Claim("RevenuePercentage", user.RevenuePercentage.ToString()),
+            new Claim("isEnterprise", user.IsEnterprise.ToString()),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 

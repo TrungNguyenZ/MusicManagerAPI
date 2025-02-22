@@ -17,25 +17,39 @@ namespace MusicManager.Services
         }
         public async Task<StatisticTotalModel> GetTotal(int quarter, int quarterYear)
         {
-            return await _repository.GetTotal(quarter, quarterYear);
+            var data = await _repository.GetTotal(quarter, quarterYear);
+            data.TotalForYear = _commonService.GetNetEnterprise(data.TotalForYear);
+            data.TotalForQuarterYear = _commonService.GetNetEnterprise(data.TotalForQuarterYear);
+            data.TotalForAll = _commonService.GetNetEnterprise(data.TotalForAll);
+            return data;
         }
-        public async Task<StatisticTotalModel> GetTotalBySinger(int quarter, int quarterYear, string artistName, double revenuePercentage)
+        public async Task<StatisticTotalModel> GetTotalBySinger(int quarter, int quarterYear, string artistName, double revenuePercentage, string isEnterprise)
         {
 
             var data = await _repository.GetTotalBySinger(quarter, quarterYear, artistName);
-            data.TotalForYear = _commonService.GetNetSinger(revenuePercentage, data.TotalForYear);     
-            data.TotalForQuarterYear = _commonService.GetNetSinger(revenuePercentage, data.TotalForQuarterYear);   
-            data.TotalForAll = _commonService.GetNetSinger(revenuePercentage, data.TotalForAll);
+            if (isEnterprise == "True")
+            {
+                data.TotalForYear = _commonService.GetNetEnterprise(data.TotalForYear);
+                data.TotalForQuarterYear = _commonService.GetNetEnterprise(data.TotalForQuarterYear);
+                data.TotalForAll = _commonService.GetNetEnterprise(data.TotalForAll);
+            }
+            else
+            {
+                data.TotalForYear = _commonService.GetNetSinger(revenuePercentage, data.TotalForYear);
+                data.TotalForQuarterYear = _commonService.GetNetSinger(revenuePercentage, data.TotalForQuarterYear);
+                data.TotalForAll = _commonService.GetNetSinger(revenuePercentage, data.TotalForAll);
+            }
+
             return data;
         }
-        public async Task<List<DigitalMonthSumModel>> Digital_Month_Sum( int year)
+        public async Task<List<DigitalMonthSumModel>> Digital_Month_Sum(int year)
         {
             return await _repository.Digital_Month_Sum(year);
         }
         public async Task<List<DigitalMonthSumModel>> Digital_Month_Sum_Singer(int year, string artistName)
         {
             return await _repository.Digital_Month_Sum_Singer(year, artistName);
-        }     
+        }
         public async Task<List<DigitalQuarterPercentModel>> Digital_Quarter_Percent(int quarter, int quarterYear)
         {
             return await _repository.Digital_Quarter_Percent(quarter, quarterYear);
@@ -51,7 +65,7 @@ namespace MusicManager.Services
         public async Task<List<DigitalYearPercentModel>> Digital_Year_Percent_Singer(int quarterYear, string artistName)
         {
             return await _repository.Digital_Year_Percent_Singer(quarterYear, artistName);
-        }    
+        }
         public async Task<List<DigitalQuarterSumModel>> Digital_Quarter_Sum(int year)
         {
             return await _repository.Digital_Quarter_Sum(year);
@@ -59,11 +73,11 @@ namespace MusicManager.Services
         public async Task<List<DigitalQuarterSumModel>> Digital_Quarter_Sum_Singer(int year, string artistName)
         {
             return await _repository.Digital_Quarter_Sum_Singer(year, artistName);
-        }    
+        }
         public async Task<List<DigitalYearSumModel>> Digital_Year_Sum()
         {
             return await _repository.Digital_Year_Sum();
-        } 
+        }
         public async Task<List<DigitalYearSumModel>> Digital_Year_Sum_Singer(string artistName)
         {
             return await _repository.Digital_Year_Sum_Singer(artistName);
@@ -75,75 +89,95 @@ namespace MusicManager.Services
         public async Task<List<CountryPercentModel>> Country_Quarter_Percent_Singer(int quarter, int quarterYear, string artistName)
         {
             return await _repository.Country_Quarter_Percent_Singer(quarter, quarterYear, artistName);
-        }   
+        }
         public async Task<List<CountryPercentModel>> Country_Year_Percent(int quarteryear)
         {
             return await _repository.Country_Year_Percent(quarteryear);
-        }    
+        }
         public async Task<List<CountryPercentModel>> Country_Year_Percent_Singer(int quarteryear, string artistName)
         {
             return await _repository.Country_Year_Percent_Singer(quarteryear, artistName);
         }
-        public async Task<List<StatisticYoutubeModel>> YoutubeYear(int quarteryear){
+        public async Task<List<StatisticYoutubeModel>> YoutubeYear(int quarteryear)
+        {
             return await _repository.YoutubeYear(quarteryear);
         }
-        public async Task<List<StatisticYoutubeModel>> YoutubeYear_Singer(int quarteryear, string artistName){
+        public async Task<List<StatisticYoutubeModel>> YoutubeYear_Singer(int quarteryear, string artistName)
+        {
             return await _repository.YoutubeYear_Singer(quarteryear, artistName);
         }
-        public async Task<List<StatisticYoutubeModel>> YoutubeQuarter(int quarteryear, int quarter){
+        public async Task<List<StatisticYoutubeModel>> YoutubeQuarter(int quarteryear, int quarter)
+        {
             return await _repository.YoutubeQuarter(quarteryear, quarter);
         }
-        public async Task<List<StatisticYoutubeModel>> YoutubeQuarter_Singer(int quarteryear, int quarter, string artistName){
+        public async Task<List<StatisticYoutubeModel>> YoutubeQuarter_Singer(int quarteryear, int quarter, string artistName)
+        {
             return await _repository.YoutubeQuarter_Singer(quarteryear, quarter, artistName);
         }
-        public async Task<List<StatisticPriceNameModel>> PriceYear(int quarteryear){
+        public async Task<List<StatisticPriceNameModel>> PriceYear(int quarteryear)
+        {
             return await _repository.PriceYear(quarteryear);
         }
-        public async Task<List<StatisticPriceNameModel>> PriceYear_Singer(int quarteryear, string artistName){
+        public async Task<List<StatisticPriceNameModel>> PriceYear_Singer(int quarteryear, string artistName)
+        {
             return await _repository.PriceYear_Singer(quarteryear, artistName);
         }
-        public async Task<List<StatisticPriceNameModel>> PriceQuarter(int quarteryear, int quarter){
+        public async Task<List<StatisticPriceNameModel>> PriceQuarter(int quarteryear, int quarter)
+        {
             return await _repository.PriceQuarter(quarteryear, quarter);
         }
-        public async Task<List<StatisticPriceNameModel>> PriceQuarter_Singer(int quarteryear, int quarter, string artistName) {
+        public async Task<List<StatisticPriceNameModel>> PriceQuarter_Singer(int quarteryear, int quarter, string artistName)
+        {
             return await _repository.PriceQuarter_Singer(quarteryear, quarter, artistName);
         }
-        public async Task<StatisticTop> StatisticTop(int type , int quarteryear, int year)
+        public async Task<StatisticTop> StatisticTop(int type, int quarteryear, int year)
         {
             var rs = new StatisticTop();
-            if(type == 1)
+            if (type == 1)
             {
                 rs.TopCountry = await _repository.TopCountryQuarter(quarteryear, year);
+                rs.TopCountry.sum = _commonService.GetNetEnterprise(rs.TopCountry.sum);
                 rs.TopDigital = await _repository.TopDigitalQuarter(quarteryear, year);
+                rs.TopDigital.sum = _commonService.GetNetEnterprise(rs.TopDigital.sum);
                 rs.DigitalCount = await _repository.DigitalCountQuarter(quarteryear, year);
             }
             else
             {
                 rs.TopCountry = await _repository.TopCountryYear(year);
+                rs.TopCountry.sum = _commonService.GetNetEnterprise(rs.TopCountry.sum);
                 rs.TopDigital = await _repository.TopDigitalYear(year);
+                rs.TopDigital.sum = _commonService.GetNetEnterprise(rs.TopDigital.sum);
                 rs.DigitalCount = await _repository.DigitalCountYear(year);
             }
             return rs;
         }
-        public async Task<StatisticTop> StatisticTop_Singer(int type, int quarteryear, int year, string artistName, double revenuePercentage)
+        public async Task<StatisticTop> StatisticTop_Singer(int type, int quarteryear, int year, string artistName, double revenuePercentage, string isEnterprise)
         {
             var rs = new StatisticTop();
             if (type == 1)
             {
                 rs.TopCountry = await _repository.TopCountryQuarter_Singer(quarteryear, year, artistName);
-                rs.TopCountry.sum = _commonService.GetNetSinger(revenuePercentage, rs.TopCountry.sum);
                 rs.TopDigital = await _repository.TopDigitalQuarter_Singer(quarteryear, year, artistName);
-                rs.TopDigital.sum = _commonService.GetNetSinger(revenuePercentage, rs.TopDigital.sum);
                 rs.DigitalCount = await _repository.DigitalCountQuarter_Singer(quarteryear, year, artistName);
             }
             else
             {
                 rs.TopCountry = await _repository.TopCountryYear_Singer(year, artistName);
-                rs.TopCountry.sum = _commonService.GetNetSinger(revenuePercentage, rs.TopCountry.sum);
                 rs.TopDigital = await _repository.TopDigitalYear_Singer(year, artistName);
-                rs.TopDigital.sum = _commonService.GetNetSinger(revenuePercentage, rs.TopDigital.sum);
                 rs.DigitalCount = await _repository.DigitalCountYear_Singer(year, artistName);
             }
+
+            if (isEnterprise == "True")
+            {
+                rs.TopCountry.sum = _commonService.GetNetEnterprise(rs.TopCountry.sum);
+                rs.TopDigital.sum = _commonService.GetNetEnterprise(rs.TopDigital.sum);
+            }
+            else
+            {
+                rs.TopCountry.sum = _commonService.GetNetSinger(revenuePercentage, rs.TopCountry.sum);
+                rs.TopDigital.sum = _commonService.GetNetSinger(revenuePercentage, rs.TopDigital.sum);
+            }
+
             return rs;
         }
     }

@@ -6,7 +6,7 @@ namespace MusicManager.Services
     public interface IStatisticService
     {
         Task<StatisticTotalModel> GetTotal(int quarter, int quarterYear);
-        Task<StatisticTotalModel> GetTotalBySinger(int quarter, int quarterYear, string artistName, double revenuePercentage);
+        Task<StatisticTotalModel> GetTotalBySinger(int quarter, int quarterYear, string artistName, double revenuePercentage, string isEnterprise);
         Task<List<DigitalMonthSumModel>> Digital_Month_Sum(int year);
         Task<List<DigitalMonthSumModel>> Digital_Month_Sum_Singer(int year, string artistName);
         Task<List<DigitalQuarterPercentModel>> Digital_Quarter_Percent_Singer(int quarter, int quarterYear, string artistName);
@@ -29,7 +29,7 @@ namespace MusicManager.Services
         Task<List<StatisticPriceNameModel>> PriceYear_Singer(int quarteryear, string artistName);
         Task<List<StatisticPriceNameModel>> PriceQuarter(int quarteryear, int quarter);
         Task<List<StatisticPriceNameModel>> PriceQuarter_Singer(int quarteryear, int quarter, string artistName);
-        Task<StatisticTop> StatisticTop_Singer(int type, int quarteryear, int year, string artistName, double revenuePercentage);
+        Task<StatisticTop> StatisticTop_Singer(int type, int quarteryear, int year, string artistName, double revenuePercentage, string IsEnterprise);
         Task<StatisticTop> StatisticTop(int type, int quarteryear, int year);
 
     }

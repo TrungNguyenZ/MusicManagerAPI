@@ -22,30 +22,25 @@ namespace MusicManager.Services
             decimal decimalValue = decimal.Parse(input, NumberStyles.Float, CultureInfo.InvariantCulture);
             return decimalValue;
         }
-        public long GetNetSinger(double revenuePercentage, long value)
+        public long GetNetSinger(object revenuePercentage, object value)
         {
-            var gross = value * revenuePercentage / 100;
-            var net = (long)(gross * 90 / 100) * 90 / 100;
+            double revenue = revenuePercentage is string ? double.Parse((string)revenuePercentage) : Convert.ToDouble(revenuePercentage);
+            double amount = Convert.ToDouble(value);
+
+            double gross = (amount * 90 / 100) * revenue / 100;
+            long net = (long)(gross * 90 / 100);
+
             return net;
         }
-        public long GetNetSinger(double revenuePercentage, double value)
+        public long GetNetEnterprise(object value)
         {
-            var gross = value * revenuePercentage / 100;
-            var net = (long)(gross * 90 / 100) * 90 / 100;
+            double amount = Convert.ToDouble(value);
+
+            long net = (long)(amount * 90 / 100);
+
             return net;
         }
-        public long GetNetSinger(string revenuePercentage, double value)
-        {
-            var gross = value * Double.Parse(revenuePercentage) / 100;
-            var net = (long)(gross * 90 / 100) * 90 / 100;
-            return net;
-        }
-        public long GetNetSinger(string revenuePercentage, long value)
-        {
-            var gross = value * Double.Parse(revenuePercentage) / 100;
-            var net = (long)(gross * 90 / 100) * 90 / 100;
-            return net;
-        }
+
         public async Task<string> GetAccessTokenAsync()
         {
             var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "JsonAuthenFCM", "mykind-19350-firebase-adminsdk-fbsvc-ba600518ef.json");
