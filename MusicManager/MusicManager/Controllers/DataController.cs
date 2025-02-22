@@ -65,7 +65,7 @@ namespace MusicManager.Controllers
         }
 
         [HttpPost("upload-excel")]
-        public IActionResult UploadExcel(IFormFile file, [FromForm] int quarter, [FromForm] int year)
+        public async Task<IActionResult> UploadExcelAsync(IFormFile file, [FromForm] int quarter, [FromForm] int year)
         {
             try
             {
@@ -94,7 +94,7 @@ namespace MusicManager.Controllers
                     var fileBytes = stream.ToArray();
 
                     // Đẩy công việc vào hàng đợi Hangfire để xử lý nền
-                    BackgroundJob.Enqueue(() =>  ProcessExcel(fileBytes, quarter, year));
+                    await ProcessExcel(fileBytes, quarter, year);
                 }
 
                 return Ok(rs);
@@ -139,7 +139,7 @@ namespace MusicManager.Controllers
                 }
 
                 var list = new List<DataModel>();
-                foreach (var row in data)
+                foreach (var row in data.Take(data.Count() -3))
                 {
                     var dataRow = row.Where(x => !string.IsNullOrEmpty(x.Key)).ToList();
                     var netIncome = decimal.Parse(dataRow[26].Value);
