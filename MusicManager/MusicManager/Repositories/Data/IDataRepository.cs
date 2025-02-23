@@ -6,5 +6,6 @@ namespace MusicManager.Repositories.Data
     {
         Task<List<DataExportExcelModel>> GetData(int quarter, int year);
         Task<List<DataExportExcelModel>> GetData(string artistName, int quarter, int year);
+        Task<List<TableRevenue>> GetTableRevenue(int quarter, int year);
     }
 }

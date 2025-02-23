@@ -163,6 +163,7 @@ namespace MusicManager.Controllers
                 Name = model.Name,
                 RevenuePercentage = model.RevenuePercentage,
                 IsAdmin = model.IsAdmin,
+                IsEnterprise = model.IsEnterprise,
             };
             var result = await _userManager.CreateAsync(input, model.Password);
             if (result.Succeeded)
@@ -194,6 +195,7 @@ namespace MusicManager.Controllers
 
             user.Email = model.Email;
             user.IsAdmin = model.IsAdmin;
+            user.IsEnterprise = model.IsEnterprise;
             user.ArtistName = model.ArtistName;
             user.PhoneNumber = model.Phone;
             user.RevenuePercentage = model.RevenuePercentage;

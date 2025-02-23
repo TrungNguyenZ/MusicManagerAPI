@@ -27,6 +27,13 @@ namespace MusicManager.Repositories.Data
                 .ToListAsync();
             return result;
         }
+        public async Task<List<TableRevenue>> GetTableRevenue(int quarter, int year)
+        {
+            var result = await _context.TableRevenue
+                .FromSqlRaw("EXEC SP_TableRevenue @quarter = {0} , @year = {1}", quarter, year)
+                .ToListAsync();
+            return result;
+        }
 
     }
 }

@@ -136,9 +136,15 @@ namespace MusicManager.Services
             if (type == 1)
             {
                 rs.TopCountry = await _repository.TopCountryQuarter(quarteryear, year);
-                rs.TopCountry.sum = _commonService.GetNetEnterprise(rs.TopCountry.sum);
+                if (rs.TopCountry != null)
+                {
+                    rs.TopCountry.sum = _commonService.GetNetEnterprise(rs.TopCountry.sum);
+                }
                 rs.TopDigital = await _repository.TopDigitalQuarter(quarteryear, year);
-                rs.TopDigital.sum = _commonService.GetNetEnterprise(rs.TopDigital.sum);
+                if (rs.TopCountry != null)
+                {
+                    rs.TopDigital.sum = _commonService.GetNetEnterprise(rs.TopDigital.sum);
+                }
                 rs.DigitalCount = await _repository.DigitalCountQuarter(quarteryear, year);
             }
             else
@@ -169,13 +175,25 @@ namespace MusicManager.Services
 
             if (isEnterprise == "True")
             {
-                rs.TopCountry.sum = _commonService.GetNetEnterprise(rs.TopCountry.sum);
-                rs.TopDigital.sum = _commonService.GetNetEnterprise(rs.TopDigital.sum);
+                if (rs.TopCountry != null)
+                {
+                    rs.TopCountry.sum = _commonService.GetNetEnterprise(rs.TopCountry.sum);
+                }
+                if (rs.TopDigital != null)
+                {
+                    rs.TopDigital.sum = _commonService.GetNetEnterprise(rs.TopDigital.sum);
+                }
             }
             else
             {
-                rs.TopCountry.sum = _commonService.GetNetSinger(revenuePercentage, rs.TopCountry.sum);
-                rs.TopDigital.sum = _commonService.GetNetSinger(revenuePercentage, rs.TopDigital.sum);
+                if (rs.TopCountry != null)
+                {
+                    rs.TopCountry.sum = _commonService.GetNetSinger(revenuePercentage, rs.TopCountry.sum);
+                }
+                if (rs.TopDigital != null)
+                {
+                    rs.TopDigital.sum = _commonService.GetNetSinger(revenuePercentage, rs.TopDigital.sum);
+                }
             }
 
             return rs;

@@ -548,7 +548,7 @@ namespace MusicManager.Controllers
                         ? _commonService.GetNetEnterprise(sum)
                         : _commonService.GetNetSinger(userClaims.RevenuePercentage, sum);
                 }).ToList()
-            }).ToList();
+            }).OrderBy(x=>x.Name).ToList();
 
             return new ResponseData<StatisticSumModel>
             {

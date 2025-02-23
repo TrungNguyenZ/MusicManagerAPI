@@ -32,5 +32,10 @@ namespace MusicManager.Services
             return await _dataRepository.GetData(artistName, quarter, year);
         }
 
+        public async Task<List<TableRevenue>> GetTableRevenue(int quarter, int year)
+        {
+            return await _dataRepository.GetTableRevenue(quarter, year);
+        }
+
     }
 }

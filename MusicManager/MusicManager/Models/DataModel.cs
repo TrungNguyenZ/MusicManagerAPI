@@ -50,4 +50,13 @@ namespace MusicManager.Models
         public int sale { get; set; }
         public decimal netIncome { get; set; }
     }
+    public class TableRevenue
+    {
+        public string Name { get; set; }
+        public string UserName { get; set; }
+        public string Email { get; set; }
+        public string PhoneNumber { get; set; }
+        public long TotalNetIncome { get; set; }
+        public long UserRevenue { get; set; }
+    }
 }

@@ -21,10 +21,12 @@ namespace MusicManager
         public DbSet<DataModel> DataModels { get; set; }
         public DbSet<RefreshToken> RefreshToken { get; set; }
         public DbSet<DataExportExcelModel> DataExportExcelModel { get; set; }
+        public DbSet<TableRevenue> TableRevenue { get; set; }
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<TableRevenue>().HasNoKey();
             modelBuilder.Entity<DataExportExcelModel>().HasNoKey();
             modelBuilder.Entity<StatisticTotalModel>().HasNoKey();
             modelBuilder.Entity<DigitalMonthSumModel>().HasNoKey();

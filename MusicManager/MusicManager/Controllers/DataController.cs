@@ -23,6 +23,39 @@ namespace MusicManager.Controllers
             _commonService = commonService;
             _redisService = redisService;
         }
+        [HttpGet("Revenue")]
+        public async Task<IActionResult> Revenue(int quarter, int year)
+        {
+            try
+            {
+                var res = new ResponseData<List<TableRevenue>>();
+                var cacheKey =$"TableRevenue_{quarter}_{year}";
+
+                var dataRedis = await _redisService.GetAsync(cacheKey);
+                if (dataRedis == null)
+                {
+                    res.data = await _dataService.GetTableRevenue(quarter, year);
+
+                    await _redisService.SetAsync(cacheKey, JsonSerializer.Serialize(res.data));
+                }
+                else
+                {
+                    res.data = JsonSerializer.Deserialize<List<TableRevenue>>(dataRedis);
+                }
+
+                return Ok(res);
+            }
+            catch (Exception ex)
+            {
+                var bad = new ResponseBase()
+                {
+                    isSuccess = false,
+                    message = ex.Message,
+                    code = 500
+                };
+                return Ok(bad);
+            }
+        }
         [HttpGet("PushFCM")]
         public async Task<IActionResult> Test()
         {

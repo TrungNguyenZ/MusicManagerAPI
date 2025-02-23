@@ -32,6 +32,7 @@ namespace MusicManager.Models
         public string Phone { get; set; }
         public double RevenuePercentage { get; set; }
         public bool IsAdmin { get; set; } 
+        public bool IsEnterprise { get; set; } 
     }
     public class UpdateUserRequest
     {
@@ -43,6 +44,7 @@ namespace MusicManager.Models
         public string Phone { get; set; }
         public double RevenuePercentage { get; set; }
         public bool IsAdmin { get; set; }
+        public bool IsEnterprise { get; set; }
     }
     public class ChangePassword
     {

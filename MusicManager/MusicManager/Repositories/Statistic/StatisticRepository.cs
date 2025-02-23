@@ -199,7 +199,7 @@ namespace MusicManager.Repositories
         }     
         public async Task<Statistic> TopCountryQuarter_Singer(int quarter, int year,string artistName)
         {
-            var res = await _context.DataModels.Where(x=> x.quarter == quarter && x.year == year && x.artistName == artistName).GroupBy(x => x.countryDescription).Select(item => new Statistic
+            var res = await _context.DataModels.Where(x=> x.quarter == quarter && x.year == year && artistName.Contains(x.isrc) ).GroupBy(x => x.countryDescription).Select(item => new Statistic
             {
                 name = item.Key,
                 sum = (long)item.Sum(x=>x.netIncome)
@@ -219,7 +219,7 @@ namespace MusicManager.Repositories
         }
         public async Task<Statistic> TopCountryYear_Singer(int year, string artistName)
         {
-            var res = await _context.DataModels.Where(x =>x.year == year && x.artistName == artistName).GroupBy(x => x.countryDescription).Select(item => new Statistic
+            var res = await _context.DataModels.Where(x =>x.year == year && artistName.Contains(x.isrc)).GroupBy(x => x.countryDescription).Select(item => new Statistic
             {
                 name = item.Key,
                 sum = (long)item.Sum(x => x.netIncome)
@@ -239,7 +239,7 @@ namespace MusicManager.Repositories
         }
         public async Task<Statistic> TopDigitalQuarter_Singer(int quarter, int year, string artistName)
         {
-            var res = await _context.DataModels.Where(x => x.quarter == quarter && x.quarterYear == year && x.artistName == artistName).GroupBy(x => x.digitalServiceProvider).Select(item => new Statistic
+            var res = await _context.DataModels.Where(x => x.quarter == quarter && x.quarterYear == year && artistName.Contains(x.isrc)).GroupBy(x => x.digitalServiceProvider).Select(item => new Statistic
             {
                 name = item.Key,
                 sum = (long)item.Sum(x => x.netIncome)
@@ -259,7 +259,7 @@ namespace MusicManager.Repositories
         }
         public async Task<Statistic> TopDigitalYear_Singer(int year, string artistName)
         {
-            var res = await _context.DataModels.Where(x =>x.quarterYear == year && x.artistName == artistName).GroupBy(x => x.digitalServiceProvider).Select(item => new Statistic
+            var res = await _context.DataModels.Where(x =>x.quarterYear == year && artistName.Contains(x.isrc)).GroupBy(x => x.digitalServiceProvider).Select(item => new Statistic
             {
                 name = item.Key,
                 sum = (long)item.Sum(x => x.netIncome)
@@ -275,7 +275,7 @@ namespace MusicManager.Repositories
         }
         public async Task<int> DigitalCountQuarter_Singer(int quarter, int year, string artistName)
         {
-            var res = await _context.DataModels.Where(x => x.quarter == quarter && x.quarterYear == year && x.artistName == artistName).Select(x => x.digitalServiceProvider).Distinct().CountAsync();
+            var res = await _context.DataModels.Where(x => x.quarter == quarter && x.quarterYear == year && artistName.Contains(x.isrc)).Select(x => x.digitalServiceProvider).Distinct().CountAsync();
 
             return res;
         }
@@ -287,7 +287,7 @@ namespace MusicManager.Repositories
         }
         public async Task<int> DigitalCountYear_Singer(int year, string artistName)
         {
-            var res = await _context.DataModels.Where(x => x.quarterYear == year && x.artistName == artistName).Select(x => x.digitalServiceProvider).Distinct().CountAsync();
+            var res = await _context.DataModels.Where(x => x.quarterYear == year && artistName.Contains(x.isrc)).Select(x => x.digitalServiceProvider).Distinct().CountAsync();
 
             return res;
         }
