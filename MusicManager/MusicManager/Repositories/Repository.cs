@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-
+using EFCore.BulkExtensions;
 namespace MusicManager.Repositories
 {
     public class Repository<T> : IRepository<T> where T : class
@@ -32,6 +32,10 @@ namespace MusicManager.Repositories
         {
             _dbSet.AddRange(entity);
             _context.SaveChanges();
+        }
+        public void BulkInsert(List<T> entity)
+        {
+            _context.BulkInsert(entity);
         }
 
         public void Update(T entity)

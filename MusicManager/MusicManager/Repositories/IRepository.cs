@@ -8,5 +8,6 @@
         void AddRange(List<T> entity);
         void Update(T entity);
         void Delete(int id);
+        void BulkInsert(List<T> entity);
     }
 }

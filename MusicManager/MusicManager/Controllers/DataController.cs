@@ -29,7 +29,7 @@ namespace MusicManager.Controllers
             try
             {
                 var res = new ResponseData<List<TableRevenue>>();
-                var cacheKey =$"TableRevenue_{quarter}_{year}";
+                var cacheKey = $"TableRevenue_{quarter}_{year}";
 
                 var dataRedis = await _redisService.GetAsync(cacheKey);
                 if (dataRedis == null)
@@ -124,27 +124,9 @@ namespace MusicManager.Controllers
                 {
                     file.CopyTo(stream);
                     var fileBytes = stream.ToArray();
+                    var data = new List<Dictionary<string, string>>();
 
-                    // Đẩy công việc vào hàng đợi Hangfire để xử lý nền
-                    await ProcessExcel(fileBytes, quarter, year);
-                }
 
-                return Ok(rs);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { success = false, message = ex.Message });
-            }
-        }
-        [NonAction]
-        public async Task ProcessExcel(byte[] fileBytes, int quarter, int year)
-        {
-            try
-            {
-                var data = new List<Dictionary<string, string>>();
-
-                using (var stream = new MemoryStream(fileBytes))
-                {
                     ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
                     using (var package = new ExcelPackage(stream))
                     {
@@ -167,11 +149,56 @@ namespace MusicManager.Controllers
                             }
                             data.Add(rowData);
                         }
+
                     }
+                    data = data.Take(data.Count() - 3).ToList();
+
+                    CreateJobs(data, quarter, year);
+                    // Đẩy công việc vào hàng đợi Hangfire để xử lý nền
+                    //BackgroundJob.Enqueue(() => ProcessExcel(data, quarter, year));
+                    //await ProcessExcel(fileBytes, quarter, year);
                 }
 
+                return Ok(rs);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = ex.Message });
+            }
+        }
+        [NonAction]
+        public void CreateJobs(List<Dictionary<string, string>> data, int quarter, int year)
+        {
+            // Kích thước tối đa cho mỗi job
+            int chunkSize = 10000;
+
+            // Tổng số bản ghi
+            int totalCount = data.Count;
+
+            // Tính số lượng job (mỗi job xử lý 10k bản ghi)
+            int chunkCount = (int)Math.Ceiling(totalCount / (double)chunkSize);
+
+            // Duyệt qua từng chunk
+            for (int i = 0; i < chunkCount; i++)
+            {
+                // Lấy 10k phần tử (hoặc ít hơn ở chunk cuối)
+                var chunkData = data
+                    .Skip(i * chunkSize)
+                    .Take(chunkSize)
+                    .ToList();
+
+                // Đẩy công việc vào hàng đợi Hangfire để xử lý nền
+                BackgroundJob.Enqueue(() => ProcessExcel(chunkData, quarter, year));
+            }
+        }
+        [NonAction]
+        public async Task ProcessExcel(List<Dictionary<string, string>> data, int quarter, int year)
+        {
+            try
+            {
+
                 var list = new List<DataModel>();
-                foreach (var row in data.Take(data.Count() -3))
+                foreach (var row in data.Take(data.Count() - 3))
                 {
                     var dataRow = row.Where(x => !string.IsNullOrEmpty(x.Key)).ToList();
                     var netIncome = decimal.Parse(dataRow[26].Value);
@@ -206,8 +233,7 @@ namespace MusicManager.Controllers
 
                     list.Add(model);
                 }
-
-                _dataService.AddRange(list);
+                _dataService.BulkInsert(list);
                 _redisService.ClearCacheContaining("_" + quarter + "_" + year);
                 _redisService.ClearCacheContaining(year.ToString());
                 var token = await _commonService.GetAccessTokenAsync();

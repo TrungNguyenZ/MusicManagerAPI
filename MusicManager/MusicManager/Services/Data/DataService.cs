@@ -22,6 +22,10 @@ namespace MusicManager.Services
         public void AddRange(List<DataModel> input)
         {
             _repository.AddRange(input);
+        }     
+        public void BulkInsert(List<DataModel> input)
+        {
+            _repository.BulkInsert(input);
         }
         public async Task<List<DataExportExcelModel>> GetDataExcel(int quarter, int year)
         {

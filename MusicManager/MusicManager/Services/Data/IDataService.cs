@@ -9,6 +9,7 @@ namespace MusicManager.Services
         Task<List<DataExportExcelModel>> GetDataExcel(int quarter, int year);
         Task<List<DataExportExcelModel>> GetDataExcel(string artistName, int quarter, int year);
         Task<List<TableRevenue>> GetTableRevenue(int quarter, int year);
+        void BulkInsert(List<DataModel> input);
     }
 }
  
