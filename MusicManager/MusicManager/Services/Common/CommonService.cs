@@ -104,7 +104,7 @@ namespace MusicManager.Services
 
             using var client = new MailKit.Net.Smtp.SmtpClient();
             await client.ConnectAsync("smtp.gmail.com", 587, MailKit.Security.SecureSocketOptions.StartTls);
-            await client.AuthenticateAsync("kindmedia.vn@gmail.com", "bxtg zsmt yisd egdy");
+            await client.AuthenticateAsync("contact@kindmedia.vn", "KindMusic@123");
             await client.SendAsync(emailMessage);
             await client.DisconnectAsync(true);
         }
