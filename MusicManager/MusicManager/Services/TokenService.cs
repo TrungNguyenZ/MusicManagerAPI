@@ -34,7 +34,7 @@ public class TokenService : ITokenService
         var token = new JwtSecurityToken(
             issuer: _configuration["Jwt:Issuer"],
             audience: _configuration["Jwt:Audience"],
-            expires: DateTime.UtcNow.AddDays(30), // Access token hết hạn trong 30 phút
+            expires: DateTime.UtcNow.AddSeconds(30), 
             claims: authClaims,
             signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
         );
@@ -60,7 +60,7 @@ public class TokenService : ITokenService
             ValidateIssuer = false,
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"])),
-            ValidateLifetime = false // Không kiểm tra thời hạn
+            ValidateLifetime = true // Không kiểm tra thời hạn
         };
 
         var tokenHandler = new JwtSecurityTokenHandler();

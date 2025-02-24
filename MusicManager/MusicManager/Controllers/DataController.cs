@@ -209,9 +209,10 @@ namespace MusicManager.Controllers
 
                 _dataService.AddRange(list);
                 _redisService.ClearCacheContaining("_" + quarter + "_" + year);
+                _redisService.ClearCacheContaining(year.ToString());
                 var token = await _commonService.GetAccessTokenAsync();
-                await _commonService.SendNotificationToTopicAsync(token, "KindMedia", $"Đã có đối soát của Quý {quarter} năm {year}", "all");
-                await _commonService.SendEmaiNoticationlAsync("KindMedia", $"Đã có đối soát của Quý {quarter} năm {year}");
+                await _commonService.SendNotificationToTopicAsync(token, "MyKind", $"Đã có đối soát của Quý {quarter} năm {year}", "all");
+                await _commonService.SendEmaiNoticationlAsync("MyKind", $"Đã có đối soát của Quý {quarter} năm {year}");
             }
             catch (Exception ex)
             {
