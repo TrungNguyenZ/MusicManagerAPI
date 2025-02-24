@@ -56,6 +56,8 @@ namespace MusicManager.Models
         public string UserName { get; set; }
         public string Email { get; set; }
         public string PhoneNumber { get; set; }
+        public bool isEnterprise { get; set; }
+        public double RevenuePercentage { get; set; }
         public long TotalNetIncome { get; set; }
         public long UserRevenue { get; set; }
     }
