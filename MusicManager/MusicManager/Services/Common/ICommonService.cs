@@ -5,7 +5,7 @@ namespace MusicManager.Services
     public interface ICommonService
     {
         decimal ConvertDecimal(String input);
-        long GetNetSinger(object revenuePercentage, object value);
+        long GetNetSinger(object revenuePercentage, object value, string isEnterprise);
         long GetNetEnterprise(object value);
         Task<string> GetAccessTokenAsync();
         Task SendNotificationToTopicAsync(string accessToken, string title, string body, string topic);

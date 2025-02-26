@@ -22,13 +22,14 @@ namespace MusicManager.Services
             decimal decimalValue = decimal.Parse(input, NumberStyles.Float, CultureInfo.InvariantCulture);
             return decimalValue;
         }
-        public long GetNetSinger(object revenuePercentage, object value)
+        public long GetNetSinger(object revenuePercentage, object value, string isEnterprise)
         {
             double revenue = revenuePercentage is string ? double.Parse((string)revenuePercentage) : Convert.ToDouble(revenuePercentage);
             double amount = Convert.ToDouble(value);
 
             double gross = (amount * 90 / 100) * revenue / 100;
-            long net = (long)(gross * 90 / 100);
+
+            long net = isEnterprise == "True" ? (long)gross : (long)(gross * 90 / 100);
 
             return net;
         }
@@ -92,7 +93,7 @@ namespace MusicManager.Services
         public async Task SendEmailAsync(List<string> toList, string subject, string body)
         {
             var emailMessage = new MimeMessage();
-            emailMessage.From.Add(new MailboxAddress("Kind Media", "kindmedia.vn@gmail.com"));
+            emailMessage.From.Add(new MailboxAddress("MyKind", "contact@kindmedia.vn"));
             foreach (var email in toList)
             {
                 emailMessage.To.Add(new MailboxAddress("", email));

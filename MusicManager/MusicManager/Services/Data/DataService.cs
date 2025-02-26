@@ -23,7 +23,7 @@ namespace MusicManager.Services
         {
             _repository.AddRange(input);
         }     
-        public void BulkInsert(List<DataModel> input)
+        public async Task BulkInsert(List<DataModel> input)
         {
             _repository.BulkInsert(input);
         }

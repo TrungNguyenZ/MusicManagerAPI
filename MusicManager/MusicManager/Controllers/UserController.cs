@@ -8,6 +8,8 @@ using MusicManager.Models;
 using MusicManager.Models.Base;
 using MusicManager.Repositories;
 using MusicManager.Services;
+using MusicManager.Services.Redis;
+using StackExchange.Redis;
 
 namespace MusicManager.Controllers
 {
@@ -19,6 +21,7 @@ namespace MusicManager.Controllers
         private readonly ITokenService _tokenService;
         private readonly IRefreshTokenService _refreshTokenService;
         private readonly ICommonService _commonService;
+        private readonly IRedisService _redisService;
 
         // Bộ nhớ lưu refresh token
         private static readonly Dictionary<string, List<string>> RefreshTokens = new Dictionary<string, List<string>>();
@@ -27,12 +30,15 @@ namespace MusicManager.Controllers
             UserManager<ApplicationUser> userManager, 
             ITokenService tokenService, 
             IRefreshTokenService refreshTokenService,
-            ICommonService commonService)
+            ICommonService commonService,
+            IRedisService redisService
+            )
         {
             _userManager = userManager;
             _tokenService = tokenService;
             _refreshTokenService = refreshTokenService;
             _commonService = commonService;
+            _redisService = redisService;
         }
 
         [HttpPost("login")]
@@ -169,6 +175,7 @@ namespace MusicManager.Controllers
             if (result.Succeeded)
             {
                 res.message = "Tạo tài khoản thành công!";
+                _redisService.ClearCacheContaining("TableRevenue");
                 return Ok(res);
             }
             else
@@ -206,6 +213,7 @@ namespace MusicManager.Controllers
             if (result.Succeeded)
             {
                 res.message = "Cập nhật tài khoản thành công.";
+                _redisService.ClearCacheContaining("TableRevenue");
                 return Ok(res);
             }
             else
@@ -261,6 +269,7 @@ namespace MusicManager.Controllers
             if (result.Succeeded)
             {
                 res.message = "Xoá tài khoản thành công!";
+                _redisService.ClearCacheContaining("TableRevenue");
                 return Ok(res);
             }
             else

@@ -405,7 +405,7 @@ namespace MusicManager.Controllers
         protected async Task<ResponseData<List<DigitalSumMobileModel>>> DigitalSumMonthMobile(int year, string? language)
         {
             bool isAdmin = User.FindFirst("isAdmin")?.Value == "True";
-            bool isEnterprise = User.FindFirst("isEnterprise")?.Value == "True";
+            string isEnterprise = User.FindFirst("isEnterprise")?.Value;
             string artistName = User.FindFirst("artistName")?.Value;
             string revenuePercentage = User.FindFirst("revenuePercentage")?.Value;
 
@@ -430,11 +430,7 @@ namespace MusicManager.Controllers
                     return new RevenueModel
                     {
                         platformName = provider,
-                        value = _commonService.GetNetEnterprise(sum) == 0
-                                  ? 0
-                                  : (isAdmin ? _commonService.GetNetEnterprise(sum) : (isEnterprise
-                                      ? _commonService.GetNetEnterprise(sum)
-                                      : _commonService.GetNetSinger(revenuePercentage, sum)))
+                        value = _commonService.GetNetEnterprise(sum) == 0 ? 0 : (isAdmin ? _commonService.GetNetEnterprise(sum) : _commonService.GetNetSinger(revenuePercentage, sum, isEnterprise))
                     };
                 }).ToList()
             }).ToList();
@@ -445,7 +441,7 @@ namespace MusicManager.Controllers
         protected async Task<ResponseData<List<DigitalSumMobileModel>>> DigitalSumQuarterMobile(int year, string? language)
         {
             bool isAdmin = User.FindFirst("isAdmin")?.Value == "True";
-            bool isEnterprise = User.FindFirst("isEnterprise")?.Value == "True";
+            string isEnterprise = User.FindFirst("isEnterprise")?.Value;
             string artistName = User.FindFirst("artistName")?.Value;
             string revenuePercentage = User.FindFirst("revenuePercentage")?.Value;
 
@@ -472,9 +468,7 @@ namespace MusicManager.Controllers
                         platformName = provider,
                         value = sum == 0
                                   ? 0
-                                  : (isAdmin ? _commonService.GetNetEnterprise(sum) : (isEnterprise
-                                      ? _commonService.GetNetEnterprise(sum)
-                                      : _commonService.GetNetSinger(revenuePercentage, sum)))
+                                  : (isAdmin ? _commonService.GetNetEnterprise(sum) : _commonService.GetNetSinger(revenuePercentage, sum, isEnterprise))
                     };
                 }).ToList()
             }).ToList();
@@ -485,7 +479,7 @@ namespace MusicManager.Controllers
         protected async Task<ResponseData<List<DigitalSumMobileModel>>> DigitalSumYearMobile()
         {
             bool isAdmin = User.FindFirst("isAdmin")?.Value == "True";
-            bool isEnterprise = User.FindFirst("isEnterprise")?.Value == "True";
+            string isEnterprise = User.FindFirst("isEnterprise")?.Value;
             string artistName = User.FindFirst("artistName")?.Value;
             string revenuePercentage = User.FindFirst("revenuePercentage")?.Value;
 
@@ -510,9 +504,7 @@ namespace MusicManager.Controllers
                         platformName = provider,
                         value = sum == 0
                                   ? 0
-                                  : (isAdmin ? _commonService.GetNetEnterprise(sum) : (isEnterprise
-                                      ? _commonService.GetNetEnterprise(sum)
-                                      : _commonService.GetNetSinger(revenuePercentage, sum)))
+                                  : (isAdmin ? _commonService.GetNetEnterprise(sum) : _commonService.GetNetSinger(revenuePercentage, sum, isEnterprise))
                     };
                 }).ToList()
             }).ToList();
@@ -528,7 +520,7 @@ namespace MusicManager.Controllers
                 IsAdmin = User.FindFirst("isAdmin")?.Value == "True",
                 ArtistName = User.FindFirst("artistName")?.Value,
                 RevenuePercentage = User.FindFirst("revenuePercentage")?.Value,
-                IsEnterprise = User.FindFirst("isEnterprise")?.Value == "True"
+                IsEnterprise = User.FindFirst("isEnterprise")?.Value
             };
 
             var data = userClaims.IsAdmin
@@ -544,9 +536,7 @@ namespace MusicManager.Controllers
                 Data = months.Select(month =>
                 {
                     var sum = data.FirstOrDefault(x => x.digitalServiceProvider == provider && x.month == month)?.sum ?? 0;
-                    return userClaims.IsAdmin ? _commonService.GetNetEnterprise(sum) : userClaims.IsEnterprise
-                        ? _commonService.GetNetEnterprise(sum)
-                        : _commonService.GetNetSinger(userClaims.RevenuePercentage, sum);
+                    return userClaims.IsAdmin ? _commonService.GetNetEnterprise(sum) :  _commonService.GetNetSinger(userClaims.RevenuePercentage, sum, userClaims.IsEnterprise);
                 }).ToList()
             }).OrderBy(x=>x.Name).ToList();
 
@@ -563,7 +553,7 @@ namespace MusicManager.Controllers
         protected async Task<ResponseData<StatisticSumModel>> DigitalSumQuarter(int year, string? language)
         {
             bool isAdmin = User.FindFirst("isAdmin")?.Value == "True";
-            bool isEnterprise = User.FindFirst("isEnterprise")?.Value == "True";
+            string isEnterprise = User.FindFirst("isEnterprise")?.Value;
             string artistName = User.FindFirst("artistName")?.Value;
             string revenuePercentage = User.FindFirst("revenuePercentage")?.Value;
 
@@ -594,9 +584,7 @@ namespace MusicManager.Controllers
                         ? 0
                         : isAdmin
                             ? _commonService.GetNetEnterprise(sum)
-                            : (isEnterprise
-                                ? _commonService.GetNetEnterprise(sum)
-                                : _commonService.GetNetSinger(revenuePercentage, sum));
+                            : _commonService.GetNetSinger(revenuePercentage, sum, isEnterprise);
 
                     seriesData.Data.Add(value);
                 }
@@ -617,7 +605,7 @@ namespace MusicManager.Controllers
         protected async Task<ResponseData<StatisticSumModel>> DigitalSumYear()
         {
             bool isAdmin = User.FindFirst("isAdmin")?.Value == "True";
-            bool isEnterprise = User.FindFirst("isEnterprise")?.Value == "True";
+            string isEnterprise = User.FindFirst("isEnterprise")?.Value;
             string artistName = User.FindFirst("artistName")?.Value;
             string revenuePercentage = User.FindFirst("revenuePercentage")?.Value;
 
@@ -648,9 +636,7 @@ namespace MusicManager.Controllers
                         ? 0
                         : isAdmin
                             ? _commonService.GetNetEnterprise(sum)
-                            : (isEnterprise
-                                ? _commonService.GetNetEnterprise(sum)
-                                : _commonService.GetNetSinger(revenuePercentage, sum));
+                            : _commonService.GetNetSinger(revenuePercentage, sum, isEnterprise);
 
                     seriesData.Data.Add(value);
                 }
@@ -671,7 +657,7 @@ namespace MusicManager.Controllers
         protected async Task<ResponseData<StatisticDataPercentModel>> DigitalPercentYear(int year)
         {
             bool isAdmin = User.FindFirst("isAdmin")?.Value == "True";
-            bool isEnterprise = User.FindFirst("isEnterprise")?.Value == "True";
+            string isEnterprise = User.FindFirst("isEnterprise")?.Value;
             string artistName = User.FindFirst("artistName")?.Value;
             string revenuePercentage = User.FindFirst("revenuePercentage")?.Value;
 
@@ -687,9 +673,7 @@ namespace MusicManager.Controllers
                 dataChart.data = data.Select(x =>
                     isAdmin
                         ? _commonService.GetNetEnterprise(x.sum)
-                        : (isEnterprise
-                            ? _commonService.GetNetEnterprise(x.sum)
-                            : _commonService.GetNetSinger(revenuePercentage, x.sum))
+                        : _commonService.GetNetSinger(revenuePercentage, x.sum, isEnterprise)
                 ).ToList();
             }
 
@@ -702,7 +686,7 @@ namespace MusicManager.Controllers
         protected async Task<ResponseData<StatisticDataPercentModel>> DigitalPercentQuarter(int quarter, int year)
         {
             bool isAdmin = User.FindFirst("isAdmin")?.Value == "True";
-            bool isEnterprise = User.FindFirst("isEnterprise")?.Value == "True";
+            string isEnterprise = User.FindFirst("isEnterprise")?.Value;
             string artistName = User.FindFirst("artistName")?.Value;
             string revenuePercentage = User.FindFirst("revenuePercentage")?.Value;
 
@@ -717,9 +701,7 @@ namespace MusicManager.Controllers
                 dataChart.labels = data.Select(x => x.digitalServiceProvider).ToList();
                 dataChart.data = data.Select(x => isAdmin
                     ? _commonService.GetNetEnterprise(x.sum)
-                    : (isEnterprise
-                        ? _commonService.GetNetEnterprise(x.sum)
-                        : _commonService.GetNetSinger(revenuePercentage, x.sum))).ToList();
+                    : _commonService.GetNetSinger(revenuePercentage, x.sum, isEnterprise)).ToList();
             }
 
             return new ResponseData<StatisticDataPercentModel> { data = dataChart };
@@ -727,7 +709,7 @@ namespace MusicManager.Controllers
         protected async Task<ResponseData<StatisticDataPercentModel>> CountryPercentQuarter(int quarter, int year)
         {
             bool isAdmin = User.FindFirst("isAdmin")?.Value == "True";
-            bool isEnterprise = User.FindFirst("isEnterprise")?.Value == "True";
+            string isEnterprise = User.FindFirst("isEnterprise")?.Value;
             string artistName = User.FindFirst("artistName")?.Value;
             string revenuePercentage = User.FindFirst("revenuePercentage")?.Value;
 
@@ -742,9 +724,7 @@ namespace MusicManager.Controllers
                 dataChart.labels = data.Select(x => x.countryCode).ToList();
                 dataChart.data = data.Select(x => isAdmin
                     ? _commonService.GetNetEnterprise(x.sum)
-                    : (isEnterprise
-                        ? _commonService.GetNetEnterprise(x.sum)
-                        : _commonService.GetNetSinger(revenuePercentage, x.sum))).ToList();
+                    : _commonService.GetNetSinger(revenuePercentage, x.sum, isEnterprise)).ToList();
             }
 
             return new ResponseData<StatisticDataPercentModel> { data = dataChart };
@@ -753,7 +733,7 @@ namespace MusicManager.Controllers
         protected async Task<ResponseData<StatisticDataPercentModel>> CountryPercentYear(int year)
         {
             bool isAdmin = User.FindFirst("isAdmin")?.Value == "True";
-            bool isEnterprise = User.FindFirst("isEnterprise")?.Value == "True";
+            string isEnterprise = User.FindFirst("isEnterprise")?.Value;
             string artistName = User.FindFirst("artistName")?.Value;
             string revenuePercentage = User.FindFirst("revenuePercentage")?.Value;
 
@@ -768,9 +748,7 @@ namespace MusicManager.Controllers
                 dataChart.labels = data.Select(x => x.countryCode).ToList();
                 dataChart.data = data.Select(x => isAdmin
                     ? _commonService.GetNetEnterprise(x.sum)
-                    : (isEnterprise
-                        ? _commonService.GetNetEnterprise(x.sum)
-                        : _commonService.GetNetSinger(revenuePercentage, x.sum))).ToList();
+                    : _commonService.GetNetSinger(revenuePercentage, x.sum, isEnterprise)).ToList();
             }
 
             return new ResponseData<StatisticDataPercentModel> { data = dataChart };
@@ -779,7 +757,7 @@ namespace MusicManager.Controllers
         protected async Task<ResponseData<StatisticDataPercentModel>> PriceQuarter(int year, int quarter)
         {
             bool isAdmin = User.FindFirst("isAdmin")?.Value == "True";
-            bool isEnterprise = User.FindFirst("isEnterprise")?.Value == "True";
+            string isEnterprise = User.FindFirst("isEnterprise")?.Value;
             string artistName = User.FindFirst("artistName")?.Value;
             string revenuePercentage = User.FindFirst("revenuePercentage")?.Value;
 
@@ -793,9 +771,7 @@ namespace MusicManager.Controllers
                 dataChart.labels = data.Select(x => x.priceName).ToList();
                 dataChart.data = data.Select(x => isAdmin
                     ? _commonService.GetNetEnterprise(x.sum)
-                    : (isEnterprise
-                        ? _commonService.GetNetEnterprise(x.sum)
-                        : _commonService.GetNetSinger(revenuePercentage, x.sum))
+                    : _commonService.GetNetSinger(revenuePercentage, x.sum, isEnterprise)
                 ).ToList();
             }
 
@@ -805,7 +781,7 @@ namespace MusicManager.Controllers
         protected async Task<ResponseData<StatisticDataPercentModel>> PriceYear(int year)
         {
             bool isAdmin = User.FindFirst("isAdmin")?.Value == "True";
-            bool isEnterprise = User.FindFirst("isEnterprise")?.Value == "True";
+            string isEnterprise = User.FindFirst("isEnterprise")?.Value;
             string artistName = User.FindFirst("artistName")?.Value;
             string revenuePercentage = User.FindFirst("revenuePercentage")?.Value;
 
@@ -819,9 +795,7 @@ namespace MusicManager.Controllers
                 dataChart.labels = data.Select(x => x.priceName).ToList();
                 dataChart.data = data.Select(x => isAdmin
                     ? _commonService.GetNetEnterprise(x.sum)
-                    : (isEnterprise
-                        ? _commonService.GetNetEnterprise(x.sum)
-                        : _commonService.GetNetSinger(revenuePercentage, x.sum))
+                    : _commonService.GetNetSinger(revenuePercentage, x.sum, isEnterprise)
                 ).ToList();
             }
 
@@ -831,7 +805,7 @@ namespace MusicManager.Controllers
         protected async Task<ResponseData<StatisticDataPercentModel>> YoutubeQuarter(int year, int quarter)
         {
             bool isAdmin = User.FindFirst("isAdmin")?.Value == "True";
-            bool isEnterprise = User.FindFirst("isEnterprise")?.Value == "True";
+            string isEnterprise = User.FindFirst("isEnterprise")?.Value;
             string artistName = User.FindFirst("artistName")?.Value;
             string revenuePercentage = User.FindFirst("revenuePercentage")?.Value;
 
@@ -845,9 +819,7 @@ namespace MusicManager.Controllers
                 dataChart.labels = data.Select(x => x.revenue).ToList();
                 dataChart.data = data.Select(x => isAdmin
                     ? _commonService.GetNetEnterprise(x.sum)
-                    : (isEnterprise
-                        ? _commonService.GetNetEnterprise(x.sum)
-                        : _commonService.GetNetSinger(revenuePercentage, x.sum))
+                    : _commonService.GetNetSinger(revenuePercentage, x.sum, isEnterprise)
                 ).ToList();
             }
 
@@ -857,7 +829,7 @@ namespace MusicManager.Controllers
         protected async Task<ResponseData<StatisticDataPercentModel>> YoutubeYear(int year)
         {
             bool isAdmin = User.FindFirst("isAdmin")?.Value == "True";
-            bool isEnterprise = User.FindFirst("isEnterprise")?.Value == "True";
+            string isEnterprise = User.FindFirst("isEnterprise")?.Value;
             string artistName = User.FindFirst("artistName")?.Value;
             string revenuePercentage = User.FindFirst("revenuePercentage")?.Value;
 
@@ -871,9 +843,7 @@ namespace MusicManager.Controllers
                 dataChart.labels = data.Select(x => x.revenue).ToList();
                 dataChart.data = data.Select(x => isAdmin
                     ? _commonService.GetNetEnterprise(x.sum)
-                    : (isEnterprise
-                        ? _commonService.GetNetEnterprise(x.sum)
-                        : _commonService.GetNetSinger(revenuePercentage, x.sum))
+                    :  _commonService.GetNetSinger(revenuePercentage, x.sum, isEnterprise)
                 ).ToList();
             }
 

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MusicManager.Models;
 using MusicManager.Models.Base;
+using MusicManager.Repositories;
 using MusicManager.Services;
 using MusicManager.Services.Redis;
 using OfficeOpenXml;
@@ -17,11 +18,13 @@ namespace MusicManager.Controllers
         private readonly IDataService _dataService;
         private readonly ICommonService _commonService;
         private readonly IRedisService _redisService;
-        public DataController(IDataService dataService, ICommonService commonService, IRedisService redisService)
+        private readonly IRepository<ApplicationUser> _repositoryUser;
+        public DataController(IDataService dataService, ICommonService commonService, IRedisService redisService, IRepository<ApplicationUser> repositoryUser)
         {
             _dataService = dataService;
             _commonService = commonService;
             _redisService = redisService;
+            _repositoryUser = repositoryUser;
         }
         [HttpGet("Revenue")]
         public async Task<IActionResult> Revenue(int quarter, int year)
@@ -153,7 +156,7 @@ namespace MusicManager.Controllers
                     }
                     data = data.Take(data.Count() - 3).ToList();
 
-                    CreateJobs(data, quarter, year);
+                    await CreateJobs(data, quarter, year);
                     // Đẩy công việc vào hàng đợi Hangfire để xử lý nền
                     //BackgroundJob.Enqueue(() => ProcessExcel(data, quarter, year));
                     //await ProcessExcel(fileBytes, quarter, year);
@@ -167,29 +170,30 @@ namespace MusicManager.Controllers
             }
         }
         [NonAction]
-        public void CreateJobs(List<Dictionary<string, string>> data, int quarter, int year)
+        public async Task CreateJobs(List<Dictionary<string, string>> data, int quarter, int year)
         {
-            // Kích thước tối đa cho mỗi job
             int chunkSize = 10000;
 
-            // Tổng số bản ghi
             int totalCount = data.Count;
 
-            // Tính số lượng job (mỗi job xử lý 10k bản ghi)
             int chunkCount = (int)Math.Ceiling(totalCount / (double)chunkSize);
 
-            // Duyệt qua từng chunk
             for (int i = 0; i < chunkCount; i++)
             {
-                // Lấy 10k phần tử (hoặc ít hơn ở chunk cuối)
                 var chunkData = data
                     .Skip(i * chunkSize)
                     .Take(chunkSize)
                     .ToList();
 
                 // Đẩy công việc vào hàng đợi Hangfire để xử lý nền
-                BackgroundJob.Enqueue(() => ProcessExcel(chunkData, quarter, year));
+               await ProcessExcel(chunkData, quarter, year);
             }
+            _redisService.ClearCacheContaining("_" + quarter + "_" + year);
+            _redisService.ClearCacheContaining(year.ToString());
+            var token = await _commonService.GetAccessTokenAsync();
+            await _commonService.SendNotificationToTopicAsync(token, "MyKind", $"Đã có đối soát của Quý {quarter} năm {year}", "all");
+            List<String> dataUser = _repositoryUser.GetAll().Where(x => x.IsAdmin == false && x.Email != null).Select(x => x.Email).ToList();
+            //await _commonService.SendEmailAsync(dataUser, "MyKind", $"Đã có đối soát của Quý {quarter} năm {year}");
         }
         [NonAction]
         public async Task ProcessExcel(List<Dictionary<string, string>> data, int quarter, int year)
@@ -198,7 +202,7 @@ namespace MusicManager.Controllers
             {
 
                 var list = new List<DataModel>();
-                foreach (var row in data.Take(data.Count() - 3))
+                foreach (var row in data)
                 {
                     var dataRow = row.Where(x => !string.IsNullOrEmpty(x.Key)).ToList();
                     var netIncome = decimal.Parse(dataRow[26].Value);
@@ -233,12 +237,8 @@ namespace MusicManager.Controllers
 
                     list.Add(model);
                 }
-                _dataService.BulkInsert(list);
-                _redisService.ClearCacheContaining("_" + quarter + "_" + year);
-                _redisService.ClearCacheContaining(year.ToString());
-                var token = await _commonService.GetAccessTokenAsync();
-                await _commonService.SendNotificationToTopicAsync(token, "MyKind", $"Đã có đối soát của Quý {quarter} năm {year}", "all");
-                await _commonService.SendEmaiNoticationlAsync("MyKind", $"Đã có đối soát của Quý {quarter} năm {year}");
+                _dataService.AddRange(list);
+       
             }
             catch (Exception ex)
             {

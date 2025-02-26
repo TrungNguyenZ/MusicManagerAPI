@@ -27,18 +27,9 @@ namespace MusicManager.Services
         {
 
             var data = await _repository.GetTotalBySinger(quarter, quarterYear, artistName);
-            if (isEnterprise == "True")
-            {
-                data.TotalForYear = _commonService.GetNetEnterprise(data.TotalForYear);
-                data.TotalForQuarterYear = _commonService.GetNetEnterprise(data.TotalForQuarterYear);
-                data.TotalForAll = _commonService.GetNetEnterprise(data.TotalForAll);
-            }
-            else
-            {
-                data.TotalForYear = _commonService.GetNetSinger(revenuePercentage, data.TotalForYear);
-                data.TotalForQuarterYear = _commonService.GetNetSinger(revenuePercentage, data.TotalForQuarterYear);
-                data.TotalForAll = _commonService.GetNetSinger(revenuePercentage, data.TotalForAll);
-            }
+            data.TotalForYear = _commonService.GetNetSinger(revenuePercentage, data.TotalForYear, isEnterprise);
+            data.TotalForQuarterYear = _commonService.GetNetSinger(revenuePercentage, data.TotalForQuarterYear, isEnterprise);
+            data.TotalForAll = _commonService.GetNetSinger(revenuePercentage, data.TotalForAll, isEnterprise);
 
             return data;
         }
@@ -133,69 +124,36 @@ namespace MusicManager.Services
         public async Task<StatisticTop> StatisticTop(int type, int quarteryear, int year)
         {
             var rs = new StatisticTop();
-            if (type == 1)
+
+            rs.TopCountry = await _repository.TopCountryYear(year);
+
+            if (rs.TopCountry != null)
             {
-                rs.TopCountry = await _repository.TopCountryQuarter(quarteryear, year);
-                if (rs.TopCountry != null)
-                {
-                    rs.TopCountry.sum = _commonService.GetNetEnterprise(rs.TopCountry.sum);
-                }
-                rs.TopDigital = await _repository.TopDigitalQuarter(quarteryear, year);
-                if (rs.TopCountry != null)
-                {
-                    rs.TopDigital.sum = _commonService.GetNetEnterprise(rs.TopDigital.sum);
-                }
-                rs.DigitalCount = await _repository.DigitalCountQuarter(quarteryear, year);
-            }
-            else
-            {
-                rs.TopCountry = await _repository.TopCountryYear(year);
                 rs.TopCountry.sum = _commonService.GetNetEnterprise(rs.TopCountry.sum);
-                rs.TopDigital = await _repository.TopDigitalYear(year);
-                rs.TopDigital.sum = _commonService.GetNetEnterprise(rs.TopDigital.sum);
-                rs.DigitalCount = await _repository.DigitalCountYear(year);
             }
+            rs.TopDigital = await _repository.TopDigitalYear(year);
+            if (rs.TopCountry != null)
+            {
+                rs.TopDigital.sum = _commonService.GetNetEnterprise(rs.TopDigital.sum);
+            }
+            rs.DigitalCount = await _repository.DigitalCountYear(year);
             return rs;
         }
         public async Task<StatisticTop> StatisticTop_Singer(int type, int quarteryear, int year, string artistName, double revenuePercentage, string isEnterprise)
         {
             var rs = new StatisticTop();
-            if (type == 1)
-            {
-                rs.TopCountry = await _repository.TopCountryQuarter_Singer(quarteryear, year, artistName);
-                rs.TopDigital = await _repository.TopDigitalQuarter_Singer(quarteryear, year, artistName);
-                rs.DigitalCount = await _repository.DigitalCountQuarter_Singer(quarteryear, year, artistName);
-            }
-            else
-            {
-                rs.TopCountry = await _repository.TopCountryYear_Singer(year, artistName);
-                rs.TopDigital = await _repository.TopDigitalYear_Singer(year, artistName);
-                rs.DigitalCount = await _repository.DigitalCountYear_Singer(year, artistName);
-            }
 
-            if (isEnterprise == "True")
+            rs.TopCountry = await _repository.TopCountryYear_Singer(year, artistName);
+            rs.TopDigital = await _repository.TopDigitalYear_Singer(year, artistName);
+            rs.DigitalCount = await _repository.DigitalCountYear_Singer(year, artistName);
+            if (rs.TopCountry != null)
             {
-                if (rs.TopCountry != null)
-                {
-                    rs.TopCountry.sum = _commonService.GetNetEnterprise(rs.TopCountry.sum);
-                }
-                if (rs.TopDigital != null)
-                {
-                    rs.TopDigital.sum = _commonService.GetNetEnterprise(rs.TopDigital.sum);
-                }
+                rs.TopCountry.sum = _commonService.GetNetSinger(revenuePercentage, rs.TopCountry.sum, isEnterprise);
             }
-            else
+            if (rs.TopDigital != null)
             {
-                if (rs.TopCountry != null)
-                {
-                    rs.TopCountry.sum = _commonService.GetNetSinger(revenuePercentage, rs.TopCountry.sum);
-                }
-                if (rs.TopDigital != null)
-                {
-                    rs.TopDigital.sum = _commonService.GetNetSinger(revenuePercentage, rs.TopDigital.sum);
-                }
+                rs.TopDigital.sum = _commonService.GetNetSinger(revenuePercentage, rs.TopDigital.sum, isEnterprise);
             }
-
             return rs;
         }
     }
