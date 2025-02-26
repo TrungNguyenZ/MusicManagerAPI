@@ -252,7 +252,7 @@ namespace MusicManager.Controllers
             var isAdminClaim = User.FindFirst("isAdmin")?.Value;
             var artistName = User.FindFirst("artistName")?.Value;
             var revenuePercentage = User.FindFirst("revenuePercentage").Value;
-            bool isEnterprise = User.FindFirst("isEnterprise")?.Value == "True";
+            string isEnterprise = User.FindFirst("isEnterprise")?.Value;
             var data = new List<DataExportExcelModel>();
 
             var cacheKey = isAdminClaim == "True"
@@ -323,13 +323,13 @@ namespace MusicManager.Controllers
                 worksheet.Cells[i + startRow + 1, 11].Value = data[i].priceName;
                 worksheet.Cells[i + startRow + 1, 12].Value = data[i].revenueTypeDesc;
                 worksheet.Cells[i + startRow + 1, 13].Value = data[i].sale;
-                if (isAdminClaim == "True" || isEnterprise)
+                if (isAdminClaim == "True")
                 {
                     worksheet.Cells[i + startRow + 1, 14].Value = (long)_commonService.GetNetEnterprise(data[i].netIncome);
                 }
                 else
                 {
-                    worksheet.Cells[i + startRow + 1, 14].Value = (long)_commonService.GetNetSinger(revenuePercentage, (long)data[i].netIncome);
+                    worksheet.Cells[i + startRow + 1, 14].Value = (long)_commonService.GetNetSinger(revenuePercentage, (long)data[i].netIncome, isEnterprise);
                 }
             }
 
