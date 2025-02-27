@@ -75,7 +75,7 @@ namespace MusicManager.Controllers
                 var isAdminClaim = User.FindFirst("isAdmin")?.Value;
                 var artistName = User.FindFirst("artistName")?.Value;
                 var res = new ResponseData<List<TopChartTrack>>();
-                var cacheKey = $"TopChartTrack_{isAdminClaim}_{type}_{quarter}_{year}_{pageSize}";
+                var cacheKey = $"TopChartTrack_{isAdminClaim}_{artistName}_{type}_{quarter}_{year}_{pageSize}";
                 var dataRedis = await _redisService.GetAsync(cacheKey);
                 if (dataRedis == null)
                 {

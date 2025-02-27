@@ -217,3 +217,14 @@ MusicManager/MusicManager/obj/Release/net6.0/win-x64/refint/MusicManager.dll
 MusicManager/MusicManager/obj/Release/net6.0/win-x64/staticwebassets/msbuild.build.MusicManager.props
 MusicManager/MusicManager/obj/Release/net6.0/win-x64/staticwebassets/msbuild.buildMultiTargeting.MusicManager.props
 MusicManager/MusicManager/obj/Release/net6.0/win-x64/staticwebassets/msbuild.buildTransitive.MusicManager.props
+MusicManager/MusicManager/obj/Release/net6.0/win-x64/PubTmp/Out/Azure.Core.dll
+MusicManager/MusicManager/obj/Release/net6.0/win-x64/PubTmp/Out/Azure.Identity.dll
+MusicManager/MusicManager/obj/Release/net6.0/win-x64/PubTmp/Out/EFCore.BulkExtensions.dll
+MusicManager/MusicManager/obj/Release/net6.0/win-x64/PubTmp/Out/Microsoft.Bcl.AsyncInterfaces.dll
+MusicManager/MusicManager/obj/Release/net6.0/win-x64/PubTmp/Out/Microsoft.Data.Sqlite.dll
+MusicManager/MusicManager/obj/Release/net6.0/win-x64/PubTmp/Out/Microsoft.EntityFrameworkCore.Sqlite.dll
+MusicManager/MusicManager/obj/Release/net6.0/win-x64/PubTmp/Out/Microsoft.Extensions.DependencyModel.dll
+MusicManager/MusicManager/obj/Release/net6.0/win-x64/PubTmp/Out/Microsoft.Identity.Client.Extensions.Msal.dll
+MusicManager/MusicManager/obj/Release/net6.0/win-x64/PubTmp/Out/NetTopologySuite.dll
+MusicManager/MusicManager/obj/Release/net6.0/win-x64/PubTmp/Out/NetTopologySuite.IO.SqlServerBytes.dll
+MusicManager/MusicManager/obj/Release/net6.0/win-x64/PubTmp/Out/SQLitePCLRaw.core.dll
