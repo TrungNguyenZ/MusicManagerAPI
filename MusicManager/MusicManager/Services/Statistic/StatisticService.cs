@@ -156,5 +156,13 @@ namespace MusicManager.Services
             }
             return rs;
         }
+        public Task<List<DigitalYearSumModel>> Digital_Sale_Year_Singer(int year, string artistName)
+        {
+            return _repository.Digital_Sale_Year_Singer(year, artistName);
+        }
+        public Task<List<DigitalYearSumModel>> Digital_Sale_Year(int year)
+        {
+            return _repository.Digital_Sale_Year(year);
+        }
     }
 }

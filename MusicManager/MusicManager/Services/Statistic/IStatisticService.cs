@@ -31,6 +31,8 @@ namespace MusicManager.Services
         Task<List<StatisticPriceNameModel>> PriceQuarter_Singer(int quarteryear, int quarter, string artistName);
         Task<StatisticTop> StatisticTop_Singer(int type, int quarteryear, int year, string artistName, double revenuePercentage, string IsEnterprise);
         Task<StatisticTop> StatisticTop(int type, int quarteryear, int year);
+        Task<List<DigitalYearSumModel>> Digital_Sale_Year_Singer(int year, string artistName);
+        Task<List<DigitalYearSumModel>> Digital_Sale_Year(int year);
 
     }
 }

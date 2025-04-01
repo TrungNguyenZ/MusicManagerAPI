@@ -291,5 +291,19 @@ namespace MusicManager.Repositories
 
             return res;
         }
+        public async Task<List<DigitalYearSumModel>> Digital_Sale_Year(int year)
+        {
+            var result = await _context.DigitalYearSumModel
+                .FromSqlRaw("EXEC SP_statistic_digitalService_sale_year @year = {0}", year)
+                .ToListAsync();
+            return result;
+        }
+        public async Task<List<DigitalYearSumModel>> Digital_Sale_Year_Singer(int year, string artistName)
+        {
+            var result = await _context.DigitalYearSumModel
+                .FromSqlRaw("EXEC SP_statistic_digitalService_sale_year_singer @year = {0} , @artistName = {1}", year, artistName)
+                .ToListAsync();
+            return result;
+        }
     }
 }

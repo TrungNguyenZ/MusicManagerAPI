@@ -296,7 +296,10 @@ namespace MusicManager.Controllers
             worksheet.Cells[startRow, 2].Value = "Artist name";
             worksheet.Cells[startRow, 3].Value = "Project title";
             worksheet.Cells[startRow, 4].Value = "Catalogue number";
-            worksheet.Cells[startRow, 5].Value = "Isrc";
+            if (isAdminClaim == "True")
+            {
+                worksheet.Cells[startRow, 5].Value = "Isrc";
+            }
             worksheet.Cells[startRow, 6].Value = "Catalogue title";
             worksheet.Cells[startRow, 7].Value = "Report mon";
             worksheet.Cells[startRow, 8].Value = "Digital Service Provider";
@@ -314,7 +317,10 @@ namespace MusicManager.Controllers
                 worksheet.Cells[i + startRow + 1, 2].Value = data[i].artistName;
                 worksheet.Cells[i + startRow + 1, 3].Value = data[i].projectTitle;
                 worksheet.Cells[i + startRow + 1, 4].Value = data[i].catalogueNumber;
-                worksheet.Cells[i + startRow + 1, 5].Value = data[i].isrc;
+                if (isAdminClaim == "True")
+                {
+                    worksheet.Cells[i + startRow + 1, 5].Value = data[i].isrc;
+                }
                 worksheet.Cells[i + startRow + 1, 6].Value = data[i].catalogueTitle;
                 worksheet.Cells[i + startRow + 1, 7].Value = data[i].reportedMon;
                 worksheet.Cells[i + startRow + 1, 8].Value = data[i].digitalServiceProvider;

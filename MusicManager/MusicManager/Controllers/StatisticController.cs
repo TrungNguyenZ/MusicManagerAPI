@@ -32,6 +32,48 @@ namespace MusicManager.Controllers
             _redisService = redisService;
         }
         [Authorize]
+        [HttpGet("view")]
+        public async Task<IActionResult> view(int year)
+        {
+            try
+            {
+                var res = new ResponseData<List<DigitalYearSumModel>>();
+                var isAdminClaim = User.FindFirst("isAdmin")?.Value;
+                var artistName = User.FindFirst("artistName")?.Value;
+
+                var cacheKey = isAdminClaim == "True"
+                    ? $"View_{year}"
+                    : $"View_{year}_{artistName}";
+
+                var dataRedis = await _redisService.GetAsync(cacheKey);
+                if (dataRedis == null)
+                {
+                    res.data = isAdminClaim == "True"
+                        ? await _statisticService.Digital_Sale_Year(year)
+                        : await _statisticService.Digital_Sale_Year_Singer(year, artistName);
+
+                    await _redisService.SetAsync(cacheKey, JsonSerializer.Serialize(res.data));
+                }
+                else
+                {
+                    res.data = JsonSerializer.Deserialize<List<DigitalYearSumModel>>(dataRedis);
+                }
+
+                return Ok(res);
+            }
+            catch (Exception ex)
+            {
+                var bad = new ResponseBase()
+                {
+                    isSuccess = false,
+                    message = ex.Message,
+                    code = 500
+                };
+                return Ok(bad);
+            }
+        }
+
+        [Authorize]
         [HttpGet("total")]
         public async Task<IActionResult> Total(int quarter, int quarterYear)
         {

@@ -41,6 +41,8 @@ namespace MusicManager.Repositories
         Task<int> DigitalCountQuarter_Singer(int quarter, int year, string artistName);
         Task<int> DigitalCountYear(int year);
         Task<int> DigitalCountYear_Singer(int year, string artistName);
+        Task<List<DigitalYearSumModel>> Digital_Sale_Year(int year);
+        Task<List<DigitalYearSumModel>> Digital_Sale_Year_Singer(int year, string artistName);
 
     }
 }
