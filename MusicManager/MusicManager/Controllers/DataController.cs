@@ -292,50 +292,52 @@ namespace MusicManager.Controllers
             var worksheet = package.Workbook.Worksheets.Add("Sheet1");
 
             var startRow = 2;
-            worksheet.Cells[startRow, 1].Value = "Marketing owner";
-            worksheet.Cells[startRow, 2].Value = "Artist name";
-            worksheet.Cells[startRow, 3].Value = "Project title";
-            worksheet.Cells[startRow, 4].Value = "Catalogue number";
+            var colHead = 1;
+            worksheet.Cells[startRow, colHead].Value = "Marketing owner";
+            worksheet.Cells[startRow, ++colHead].Value = "Artist name";
+            worksheet.Cells[startRow, ++colHead].Value = "Project title";
+            worksheet.Cells[startRow, ++colHead].Value = "Catalogue number";
             if (isAdminClaim == "True")
             {
-                worksheet.Cells[startRow, 5].Value = "Isrc";
+                worksheet.Cells[startRow, ++colHead].Value = "Isrc";
             }
-            worksheet.Cells[startRow, 6].Value = "Catalogue title";
-            worksheet.Cells[startRow, 7].Value = "Report mon";
-            worksheet.Cells[startRow, 8].Value = "Digital Service Provider";
-            worksheet.Cells[startRow, 9].Value = "Country code";
-            worksheet.Cells[startRow, 10].Value = "Country description";
-            worksheet.Cells[startRow, 11].Value = "Price name";
-            worksheet.Cells[startRow, 12].Value = "Revenue type Desc";
-            worksheet.Cells[startRow, 13].Value = "sale";
-            worksheet.Cells[startRow, 14].Value = "Net income";
-
+            worksheet.Cells[startRow, ++colHead].Value = "Catalogue title";
+            worksheet.Cells[startRow, ++colHead].Value = "Report mon";
+            worksheet.Cells[startRow, ++colHead].Value = "Digital Service Provider";
+            worksheet.Cells[startRow, ++colHead].Value = "Country code";
+            worksheet.Cells[startRow, ++colHead].Value = "Country description";
+            worksheet.Cells[startRow, ++colHead].Value = "Price name";
+            worksheet.Cells[startRow, ++colHead].Value = "Revenue type Desc";
+            worksheet.Cells[startRow, ++colHead].Value = "sale";
+            worksheet.Cells[startRow, ++colHead].Value = "Net income";
+        
             // Thêm dữ liệu vào Excel
             for (int i = 0; i < data.Count(); i++)
             {
-                worksheet.Cells[i + startRow + 1, 1].Value = data[i].marketingOwner;
-                worksheet.Cells[i + startRow + 1, 2].Value = data[i].artistName;
-                worksheet.Cells[i + startRow + 1, 3].Value = data[i].projectTitle;
-                worksheet.Cells[i + startRow + 1, 4].Value = data[i].catalogueNumber;
+                var col = 1;
+                worksheet.Cells[i + startRow + 1, col].Value = data[i].marketingOwner;
+                worksheet.Cells[i + startRow + 1, ++col].Value = data[i].artistName;
+                worksheet.Cells[i + startRow + 1, ++col].Value = data[i].projectTitle;
+                worksheet.Cells[i + startRow + 1, ++col].Value = data[i].catalogueNumber;
                 if (isAdminClaim == "True")
                 {
-                    worksheet.Cells[i + startRow + 1, 5].Value = data[i].isrc;
+                    worksheet.Cells[i + startRow + 1, ++col].Value = data[i].isrc;
                 }
-                worksheet.Cells[i + startRow + 1, 6].Value = data[i].catalogueTitle;
-                worksheet.Cells[i + startRow + 1, 7].Value = data[i].reportedMon;
-                worksheet.Cells[i + startRow + 1, 8].Value = data[i].digitalServiceProvider;
-                worksheet.Cells[i + startRow + 1, 9].Value = data[i].countryCode;
-                worksheet.Cells[i + startRow + 1, 10].Value = data[i].countryDescription;
-                worksheet.Cells[i + startRow + 1, 11].Value = data[i].priceName;
-                worksheet.Cells[i + startRow + 1, 12].Value = data[i].revenueTypeDesc;
-                worksheet.Cells[i + startRow + 1, 13].Value = data[i].sale;
+                worksheet.Cells[i + startRow + 1, ++col].Value = data[i].catalogueTitle;
+                worksheet.Cells[i + startRow + 1, ++col].Value = data[i].reportedMon;
+                worksheet.Cells[i + startRow + 1, ++col].Value = data[i].digitalServiceProvider;
+                worksheet.Cells[i + startRow + 1, ++col].Value = data[i].countryCode;
+                worksheet.Cells[i + startRow + 1, ++col].Value = data[i].countryDescription;
+                worksheet.Cells[i + startRow + 1, ++col].Value = data[i].priceName;
+                worksheet.Cells[i + startRow + 1, ++col].Value = data[i].revenueTypeDesc;
+                worksheet.Cells[i + startRow + 1, ++col].Value = data[i].sale;
                 if (isAdminClaim == "True")
                 {
-                    worksheet.Cells[i + startRow + 1, 14].Value = (long)_commonService.GetNetEnterprise(data[i].netIncome);
+                    worksheet.Cells[i + startRow + 1, ++col].Value = (long)_commonService.GetNetEnterprise(data[i].netIncome);
                 }
                 else
                 {
-                    worksheet.Cells[i + startRow + 1, 14].Value = (long)_commonService.GetNetSinger(revenuePercentage, (long)data[i].netIncome, isEnterprise);
+                    worksheet.Cells[i + startRow + 1, ++col].Value = (long)_commonService.GetNetSinger(revenuePercentage, (long)data[i].netIncome, isEnterprise);
                 }
             }
 
