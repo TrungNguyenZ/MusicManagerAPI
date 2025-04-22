@@ -52,12 +52,12 @@ namespace MusicManager.Controllers
                 res.message = "Tài khoản đăng nhập không đúng!";
                 return Ok(res);
             }
-            //if (!user.Active)
-            //{
-            //    res.code = 402;
-            //    res.message = "Tài khoản của bạn chưa được kích hoạt!";
-            //    return Ok(res);
-            //}
+            if (!user.Active)
+            {
+                res.code = 402;
+                res.message = "Tài khoản của bạn chưa được kích hoạt!";
+                return Ok(res);
+            }
             if (user != null && await _userManager.CheckPasswordAsync(user, request.Password))
             {
                 var accessToken = await _tokenService.GenerateAccessToken(user);
@@ -170,6 +170,7 @@ namespace MusicManager.Controllers
                 RevenuePercentage = model.RevenuePercentage,
                 IsAdmin = model.IsAdmin,
                 IsEnterprise = model.IsEnterprise,
+                Active = false
             };
             var result = await _userManager.CreateAsync(input, model.Password);
             if (result.Succeeded)
