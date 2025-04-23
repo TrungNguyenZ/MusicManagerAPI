@@ -261,9 +261,13 @@ namespace MusicManager.Controllers
             var user = await _userManager.FindByIdAsync(id);
             if (user == null)
             {
-                res.code = 410;
-                res.message = "Tài khoản không tồn tại!";
-                return Ok(res);
+                user = await _userManager.FindByNameAsync(id);
+                if (user == null)
+                {
+                    res.code = 410;
+                    res.message = "Tài khoản không tồn tại!";
+                    return Ok(res);
+                }
             }
             var result = await _userManager.DeleteAsync(user);
 
