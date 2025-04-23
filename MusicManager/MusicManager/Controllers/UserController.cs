@@ -368,6 +368,14 @@ namespace MusicManager.Controllers
             res.message = "Đặt lại mật khẩu thành công!";
             return Ok(res);
         }
+        [HttpPost("Register")]
+        public async Task<IActionResult> Register(LoginRequest input)
+        {
+            var res = new ResponseBase();
+            res.code = 200;
+            res.message = "Đăng ký thành công!";
+            return Ok(res);
+        }
         [HttpGet("reset-password-user")]
         public async Task<IActionResult> ResetPasswordUser(string email)
         {
