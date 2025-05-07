@@ -60,10 +60,10 @@ namespace MusicManager.Controllers
             }
         }
         [HttpGet("PushFCM")]
-        public async Task<IActionResult> Test()
+        public async Task<IActionResult> SendFCM(int quarter, int year)
         {
             var token = await _commonService.GetAccessTokenAsync();
-            await _commonService.SendNotificationToTopicAsync(token, "Đã có đối soát của Quý I năm 2025", "Vui lòng vào app kiểm tra", "all");
+            await _commonService.SendNotificationToTopicAsync(token, "MyKind", $"Đã có đối soát của Quý {quarter} năm {year}", "all");
             var rs = new ResponseBase();
             return Ok(rs);
         }
