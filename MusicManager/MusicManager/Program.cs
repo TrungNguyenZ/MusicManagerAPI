@@ -14,7 +14,12 @@ using OfficeOpenXml;
 using StackExchange.Redis;
 using MusicManager.Services.Redis;
 using Hangfire;
+using Microsoft.AspNetCore.Http.Features;
 var builder = WebApplication.CreateBuilder(args);
+builder.WebHost.ConfigureKestrel(serverOptions =>
+{
+    serverOptions.Limits.MaxRequestBodySize = 1073741824; // 1 GB
+});
 builder.Services.AddHangfire(config =>
     config.SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
           .UseSimpleAssemblyNameTypeSerializer()
@@ -36,7 +41,10 @@ builder.Services.AddCors(options =>
               .AllowAnyMethod();
     });
 });
-
+builder.Services.Configure<FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = 1073741824; // 1GB
+});
 // Add services to the container.
 
 builder.Services.AddControllers();
