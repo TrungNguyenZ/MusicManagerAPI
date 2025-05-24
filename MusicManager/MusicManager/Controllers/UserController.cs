@@ -52,12 +52,12 @@ namespace MusicManager.Controllers
                 res.message = "Tài khoản đăng nhập không đúng!";
                 return Ok(res);
             }
-            if (!user.Active)
-            {
-                res.code = 402;
-                res.message = "Tài khoản của bạn chưa được kích hoạt!";
-                return Ok(res);
-            }
+            //if (!user.Active)
+            //{
+            //    res.code = 402;
+            //    res.message = "Tài khoản của bạn chưa được kích hoạt!";
+            //    return Ok(res);
+            //}
             if (user != null && await _userManager.CheckPasswordAsync(user, request.Password))
             {
                 var accessToken = await _tokenService.GenerateAccessToken(user);
@@ -150,39 +150,57 @@ namespace MusicManager.Controllers
         }
         // API thêm tài khoản
         [HttpPost("create")]
-        public async Task<IActionResult> CreateUser([FromBody] CreateUserRequest model)
+        public async Task<IActionResult> CreateUser([FromForm] CreateUserRequest model)
         {
             var res = new ResponseBase();
 
-            if (await _userManager.FindByNameAsync(model.Username) != null)
+            try
             {
-                res.code = 409;
-                res.message = "Tài khoản đã tồn tại!";
-                return Ok(res);
+                if (await _userManager.FindByNameAsync(model.Username) != null)
+                {
+                    res.code = 409;
+                    res.message = "Tài khoản đã tồn tại!";
+                    return Ok(res);
+                }
+
+                string imageUrl = null;
+                if (model.Image != null)
+                {
+                    imageUrl = await _commonService.SaveImageAsync(model.Image);
+                }
+
+                var input = new ApplicationUser
+                {
+                    UserName = model.Username,
+                    PhoneNumber = model.Phone,
+                    Email = model.Email,
+                    ArtistName = model.ArtistName,
+                    Name = model.Name,
+                    RevenuePercentage = model.RevenuePercentage,
+                    IsAdmin = model.IsAdmin,
+                    IsEnterprise = model.IsEnterprise,
+                    ImageUrl = imageUrl,
+                    Active = false
+                };
+                var result = await _userManager.CreateAsync(input, model.Password);
+                if (result.Succeeded)
+                {
+                    res.message = "Tạo tài khoản thành công!";
+                    _redisService.ClearCacheContaining("TableRevenue");
+                    return Ok(res);
+                }
+                else
+                {
+                    res.message = "Tạo tài khoản thất bại!";
+                    res.code = 400;
+                    res.isSuccess = false;
+                    return Ok(res);
+                }
             }
-            var input = new ApplicationUser
+            catch (Exception ex)
             {
-                UserName = model.Username,
-                PhoneNumber = model.Phone,
-                Email = model.Email,
-                ArtistName = model.ArtistName,
-                Name = model.Name,
-                RevenuePercentage = model.RevenuePercentage,
-                IsAdmin = model.IsAdmin,
-                IsEnterprise = model.IsEnterprise,
-                Active = false
-            };
-            var result = await _userManager.CreateAsync(input, model.Password);
-            if (result.Succeeded)
-            {
-                res.message = "Tạo tài khoản thành công!";
-                _redisService.ClearCacheContaining("TableRevenue");
-                return Ok(res);
-            }
-            else
-            {
-                res.message = "Tạo tài khoản thất bại!";
-                res.code = 400;
+                res.code = 500;
+                res.message = $"Lỗi: {ex.Message}";
                 res.isSuccess = false;
                 return Ok(res);
             }
@@ -190,37 +208,55 @@ namespace MusicManager.Controllers
 
         // API sửa tài khoản
         [HttpPost("update")]
-        public async Task<IActionResult> UpdateUser([FromBody] UpdateUserRequest model)
+        public async Task<IActionResult> UpdateUser([FromForm] UpdateUserRequest model)
         {
             var res = new ResponseBase();
-            var user = await _userManager.FindByIdAsync(model.Id);
-            if (user == null)
+            try
             {
-                res.code = 410;
-                res.message = "Tài khoản không tồn tại!";
-                return Ok(res);
-            }
+                var user = await _userManager.FindByIdAsync(model.Id);
+                if (user == null)
+                {
+                    res.code = 410;
+                    res.message = "Tài khoản không tồn tại!";
+                    return Ok(res);
+                }
 
-            user.Email = model.Email;
-            user.IsAdmin = model.IsAdmin;
-            user.IsEnterprise = model.IsEnterprise;
-            user.ArtistName = model.ArtistName;
-            user.PhoneNumber = model.Phone;
-            user.RevenuePercentage = model.RevenuePercentage;
-            user.UserName = model.Username;
-            user.Name = model.Name;
-            var result = await _userManager.UpdateAsync(user);
+                user.Email = model.Email;
+                user.IsAdmin = model.IsAdmin;
+                user.IsEnterprise = model.IsEnterprise;
+                user.ArtistName = model.ArtistName;
+                user.PhoneNumber = model.Phone;
+                user.RevenuePercentage = model.RevenuePercentage;
+                user.UserName = model.Username;
+                user.Name = model.Name;
 
-            if (result.Succeeded)
-            {
-                res.message = "Cập nhật tài khoản thành công.";
-                _redisService.ClearCacheContaining("TableRevenue");
-                return Ok(res);
+                // Cập nhật ảnh nếu có
+                if (model.Image != null)
+                {
+                    string imageUrl = await _commonService.SaveImageAsync(model.Image);
+                    user.ImageUrl = imageUrl;
+                }
+
+                var result = await _userManager.UpdateAsync(user);
+
+                if (result.Succeeded)
+                {
+                    res.message = "Cập nhật tài khoản thành công.";
+                    _redisService.ClearCacheContaining("TableRevenue");
+                    return Ok(res);
+                }
+                else
+                {
+                    res.message = "Cập nhật tài khoản thất bại!";
+                    res.code = 400;
+                    res.isSuccess = false;
+                    return Ok(res);
+                }
             }
-            else
+            catch (Exception ex)
             {
-                res.message = "Cập nhật tài khoản thất bại!";
-                res.code = 400;
+                res.code = 500;
+                res.message = $"Lỗi: {ex.Message}";
                 res.isSuccess = false;
                 return Ok(res);
             }
@@ -261,9 +297,13 @@ namespace MusicManager.Controllers
             var user = await _userManager.FindByIdAsync(id);
             if (user == null)
             {
-                res.code = 410;
-                res.message = "Tài khoản không tồn tại!";
-                return Ok(res);
+                user = await _userManager.FindByNameAsync(id);
+                if (user == null)
+                {
+                    res.code = 410;
+                    res.message = "Tài khoản không tồn tại!";
+                    return Ok(res);
+                }
             }
             var result = await _userManager.DeleteAsync(user);
 
@@ -284,34 +324,76 @@ namespace MusicManager.Controllers
         [HttpGet("getList")]
         public async Task<IActionResult> GetList()
         {
-            var res = new ResponseData<List<ApplicationUser>>()
+            try
             {
-                data = _userManager.Users.OrderByDescending(x => x.Id).ToList()
-            };
-            return Ok(res);
+                var users = _userManager.Users.OrderByDescending(x => x.Id).ToList();
+                
+                // Không cần xử lý ImageUrl null vì đã được khai báo là nullable trong model
+                
+                var res = new ResponseData<List<ApplicationUser>>()
+                {
+                    data = users
+                };
+                return Ok(res);
+            }
+            catch (Exception ex)
+            {
+                var errorRes = new ResponseBase()
+                {
+                    isSuccess = false,
+                    code = 500,
+                    message = $"Lỗi khi lấy danh sách người dùng: {ex.Message}"
+                };
+                return Ok(errorRes);
+            }
         }
         [Authorize]
         [HttpGet("Info")]
         public async Task<IActionResult> Info()
         {
-            var name = User.FindFirst(ClaimTypes.Name)?.Value;
-            var user = await _userManager.FindByNameAsync(name);
-            var output = new CreateUserRequest
+            try
             {
-                Username = user.UserName,
-                Phone = user.PhoneNumber,
-                Email = user.Email,
-                ArtistName = user.ArtistName,
-                Name = user.Name,
-                RevenuePercentage = user.RevenuePercentage,
-                IsAdmin = user.IsAdmin,
-            };
-            var res = new ResponseData<CreateUserRequest>()
+                var name = User.FindFirst(ClaimTypes.Name)?.Value;
+                var user = await _userManager.FindByNameAsync(name);
+                
+                if (user == null)
+                {
+                    return Ok(new ResponseBase
+                    {
+                        isSuccess = false,
+                        code = 404,
+                        message = "Không tìm thấy thông tin người dùng"
+                    });
+                }
+                
+                var res = new ResponseData<object>()
+                {
+                    data = new
+                    {
+                        id = user.Id,
+                        username = user.UserName,
+                        name = user.Name,
+                        email = user.Email,
+                        phone = user.PhoneNumber,
+                        artistName = user.ArtistName,
+                        revenuePercentage = user.RevenuePercentage,
+                        isAdmin = user.IsAdmin,
+                        isEnterprise = user.IsEnterprise,
+                        imageUrl = user.ImageUrl ?? "" // Trả về chuỗi rỗng nếu ImageUrl là null
+                    }
+                };
+                
+                return Ok(res);
+            }
+            catch (Exception ex)
             {
-                data = output
-            };
-            return Ok(res);
-
+                return Ok(new ResponseBase
+                {
+                    isSuccess = false,
+                    code = 500,
+                    message = $"Lỗi: {ex.Message}"
+                });
+            }
         }
 
         [Authorize]
@@ -368,6 +450,14 @@ namespace MusicManager.Controllers
             res.message = "Đặt lại mật khẩu thành công!";
             return Ok(res);
         }
+        [HttpPost("Register")]
+        public async Task<IActionResult> Register(LoginRequest input)
+        {
+            var res = new ResponseBase();
+            res.code = 200;
+            res.message = "Đăng ký thành công!";
+            return Ok(res);
+        }
         [HttpGet("reset-password-user")]
         public async Task<IActionResult> ResetPasswordUser(string email)
         {
@@ -411,6 +501,61 @@ namespace MusicManager.Controllers
                     password[i] = validChars[buffer[i] % validChars.Length];
                 }
                 return new string(password);
+            }
+        }
+        [Authorize]
+        [HttpPost("update-personal-info")]
+        public async Task<IActionResult> UpdatePersonalInfo([FromForm] UpdatePersonalInfoRequest model)
+        {
+            var res = new ResponseBase();
+            try
+            {
+                // Lấy thông tin người dùng hiện tại
+                var username = User.FindFirst(ClaimTypes.Name)?.Value;
+                var user = await _userManager.FindByNameAsync(username);
+                
+                if (user == null)
+                {
+                    res.code = 404;
+                    res.message = "Không tìm thấy thông tin người dùng";
+                    res.isSuccess = false;
+                    return Ok(res);
+                }
+
+                // Cập nhật thông tin cá nhân
+                user.Name = model.Name;
+                user.Email = model.Email;
+                user.PhoneNumber = model.Phone;
+                
+                // Cập nhật ảnh đại diện nếu có
+                if (model.Image != null)
+                {
+                    string imageUrl = await _commonService.SaveImageAsync(model.Image);
+                    user.ImageUrl = imageUrl;
+                }
+
+                // Lưu thay đổi
+                var result = await _userManager.UpdateAsync(user);
+                
+                if (result.Succeeded)
+                {
+                    res.message = "Cập nhật thông tin cá nhân thành công";
+                    return Ok(res);
+                }
+                else
+                {
+                    res.code = 400;
+                    res.message = "Cập nhật thông tin cá nhân thất bại: " + string.Join(", ", result.Errors.Select(e => e.Description));
+                    res.isSuccess = false;
+                    return Ok(res);
+                }
+            }
+            catch (Exception ex)
+            {
+                res.code = 500;
+                res.message = $"Lỗi: {ex.Message}";
+                res.isSuccess = false;
+                return Ok(res);
             }
         }
     }

@@ -1,4 +1,5 @@
 ﻿using Google.Apis.Auth.OAuth2;
+using Microsoft.AspNetCore.Http;
 using MimeKit;
 using MusicManager.Models;
 using MusicManager.Repositories;
@@ -115,5 +116,39 @@ namespace MusicManager.Services
             await SendEmailAsync(dataUser, subject, body);
         }
 
+        public async Task<string> SaveImageAsync(IFormFile imageFile)
+        {
+            if (imageFile == null || imageFile.Length == 0)
+            {
+                return null;
+            }
+
+            // Kiểm tra loại file
+            var fileExtension = Path.GetExtension(imageFile.FileName).ToLower();
+            if (fileExtension != ".jpg" && fileExtension != ".jpeg" && fileExtension != ".png")
+            {
+                throw new Exception("Chỉ hỗ trợ file ảnh .jpg, .jpeg, .png");
+            }
+
+            // Tạo thư mục nếu không tồn tại
+            var imagesFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Images");
+            if (!Directory.Exists(imagesFolder))
+            {
+                Directory.CreateDirectory(imagesFolder);
+            }
+
+            // Tạo tên file độc nhất
+            var fileName = $"{Guid.NewGuid()}{fileExtension}";
+            var filePath = Path.Combine(imagesFolder, fileName);
+
+            // Lưu file
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await imageFile.CopyToAsync(stream);
+            }
+
+            // Trả về đường dẫn tương đối để lưu vào database
+            return $"/Images/{fileName}";
+        }
     }
 }

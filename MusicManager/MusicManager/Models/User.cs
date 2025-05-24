@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Http;
 
 namespace MusicManager.Models
 {
@@ -19,6 +20,7 @@ namespace MusicManager.Models
         public bool IsAdmin { get; set; }
         public bool Active { get; set; } = false;
         public bool IsEnterprise { get; set; } = false;
+        public string? ImageUrl { get; set; }
         //public string Password { get; set; }
 
     }
@@ -33,6 +35,7 @@ namespace MusicManager.Models
         public double RevenuePercentage { get; set; }
         public bool IsAdmin { get; set; } 
         public bool IsEnterprise { get; set; } 
+        public IFormFile Image { get; set; }
     }
     public class UpdateUserRequest
     {
@@ -45,6 +48,7 @@ namespace MusicManager.Models
         public double RevenuePercentage { get; set; }
         public bool IsAdmin { get; set; }
         public bool IsEnterprise { get; set; }
+        public IFormFile Image { get; set; }
     }
     public class ChangePassword
     {
@@ -55,5 +59,12 @@ namespace MusicManager.Models
     {
         public string Id { get; set; } // ID của tài khoản
         public string NewPassword { get; set; } // Mật khẩu mới
+    }
+    public class UpdatePersonalInfoRequest
+    {
+        public string Name { get; set; }
+        public string Email { get; set; }
+        public string Phone { get; set; }
+        public IFormFile? Image { get; set; }
     }
 }

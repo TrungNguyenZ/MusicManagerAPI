@@ -11,6 +11,7 @@ using OfficeOpenXml;
 
 namespace MusicManager.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("[controller]")]
     public class DataController : ControllerBase
@@ -60,10 +61,10 @@ namespace MusicManager.Controllers
             }
         }
         [HttpGet("PushFCM")]
-        public async Task<IActionResult> Test()
+        public async Task<IActionResult> SendFCM(int quarter, int year)
         {
             var token = await _commonService.GetAccessTokenAsync();
-            await _commonService.SendNotificationToTopicAsync(token, "Đã có đối soát của Quý I năm 2025", "Vui lòng vào app kiểm tra", "all");
+            await _commonService.SendNotificationToTopicAsync(token, "MyKind", $"Đã có đối soát của Quý {quarter} năm {year}", "all");
             var rs = new ResponseBase();
             return Ok(rs);
         }
@@ -191,9 +192,9 @@ namespace MusicManager.Controllers
             }
             _redisService.ClearCacheContaining("_" + quarter + "_" + year);
             _redisService.ClearCacheContaining(year.ToString());
-            var token = await _commonService.GetAccessTokenAsync();
-            await _commonService.SendNotificationToTopicAsync(token, "MyKind", $"Đã có đối soát của Quý {quarter} năm {year}", "all");
-            List<String> dataUser = _repositoryUser.GetAll().Where(x => x.IsAdmin == false && x.Email != null).Select(x => x.Email).ToList();
+            //var token = await _commonService.GetAccessTokenAsync();
+            //await _commonService.SendNotificationToTopicAsync(token, "MyKind", $"Đã có đối soát của Quý {quarter} năm {year}", "all");
+            //List<String> dataUser = _repositoryUser.GetAll().Where(x => x.IsAdmin == false && x.Email != null).Select(x => x.Email).ToList();
             //await _commonService.SendEmailAsync(dataUser, "MyKind", $"Đã có đối soát của Quý {quarter} năm {year}");
         }
         [NonAction]
