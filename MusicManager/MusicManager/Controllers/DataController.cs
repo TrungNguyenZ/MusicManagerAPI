@@ -100,6 +100,7 @@ namespace MusicManager.Controllers
             }
         }
 
+        [RequestSizeLimit(1073741824)] 
         [HttpPost("upload-excel")]
         public async Task<IActionResult> UploadExcelAsync(IFormFile file, [FromForm] int quarter, [FromForm] int year)
         {
