@@ -122,6 +122,7 @@ builder.Services.AddScoped<ITopChartService, TopChartService>();
 builder.Services.AddScoped<IRedisService, RedisService>();
 builder.Services.AddScoped<IRefreshTokenService, RefreshTokenService>();
 var app = builder.Build();
+app.UseStaticFiles();
 app.MapGet("/redis", () => "Redis integrated!");
 app.UseCors(x => x
             .AllowAnyOrigin()
