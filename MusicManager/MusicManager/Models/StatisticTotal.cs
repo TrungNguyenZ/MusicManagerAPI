@@ -5,6 +5,10 @@
         public long TotalForQuarterYear { get; set; } = 0;
         public long TotalForYear { get; set; } = 0;
         public long TotalForAll { get; set; } = 0;
+        public long? Quarter1 { get; set; } = 0;
+        public long? Quarter2 { get; set; } = 0;
+        public long? Quarter3 { get; set; } = 0;
+        public long? Quarter4 { get; set; } = 0;
     }
     public class StatisticSumModel
     {

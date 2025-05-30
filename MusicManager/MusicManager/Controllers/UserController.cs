@@ -83,7 +83,8 @@ namespace MusicManager.Controllers
                     AccessToken = accessToken,
                     RefreshToken = refreshToken,
                     FullName = user.Name,
-                    IsAdmin = user.IsAdmin
+                    IsAdmin = user.IsAdmin,
+                    ImageUrl = user.ImageUrl
                 };
             }
             else
