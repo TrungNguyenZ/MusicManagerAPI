@@ -21,6 +21,10 @@ namespace MusicManager.Services
             data.TotalForYear = _commonService.GetNetEnterprise(data.TotalForYear);
             data.TotalForQuarterYear = _commonService.GetNetEnterprise(data.TotalForQuarterYear);
             data.TotalForAll = _commonService.GetNetEnterprise(data.TotalForAll);
+            data.Quarter1 = _commonService.GetNetEnterprise(data.Quarter1);
+            data.Quarter2 = _commonService.GetNetEnterprise(data.Quarter2);
+            data.Quarter3 = _commonService.GetNetEnterprise(data.Quarter3);
+            data.Quarter4 = _commonService.GetNetEnterprise(data.Quarter4);
             return data;
         }
         public async Task<StatisticTotalModel> GetTotalBySinger(int quarter, int quarterYear, string artistName, double revenuePercentage, string isEnterprise)
@@ -30,6 +34,10 @@ namespace MusicManager.Services
             data.TotalForYear = _commonService.GetNetSinger(revenuePercentage, data.TotalForYear, isEnterprise);
             data.TotalForQuarterYear = _commonService.GetNetSinger(revenuePercentage, data.TotalForQuarterYear, isEnterprise);
             data.TotalForAll = _commonService.GetNetSinger(revenuePercentage, data.TotalForAll, isEnterprise);
+            data.Quarter1 = _commonService.GetNetSinger(revenuePercentage, data.Quarter1, isEnterprise);
+            data.Quarter2 = _commonService.GetNetSinger(revenuePercentage, data.Quarter2, isEnterprise);
+            data.Quarter3 = _commonService.GetNetSinger(revenuePercentage, data.Quarter3, isEnterprise);
+            data.Quarter4 = _commonService.GetNetSinger(revenuePercentage, data.Quarter4, isEnterprise);
 
             return data;
         }
