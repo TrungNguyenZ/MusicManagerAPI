@@ -68,6 +68,14 @@ namespace MusicManager.Controllers
             var rs = new ResponseBase();
             return Ok(rs);
         }
+        [HttpGet("PushFCM-Test")]
+        public async Task<IActionResult> SendFCM_Test(string topic, int quarter, int year)
+        {
+            var token = await _commonService.GetAccessTokenAsync();
+            await _commonService.SendNotificationToTopicAsync(token, "MyKind", $"Đã có đối soát của Quý {quarter} năm {year}", topic);
+            var rs = new ResponseBase();
+            return Ok(rs);
+        }
         [HttpGet("SendEmail")]
         public async Task<IActionResult> SendEmail()
         {
