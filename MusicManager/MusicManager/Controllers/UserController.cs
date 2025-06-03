@@ -9,6 +9,7 @@ using MusicManager.Models.Base;
 using MusicManager.Repositories;
 using MusicManager.Services;
 using MusicManager.Services.Redis;
+using Org.BouncyCastle.Asn1.Ocsp;
 using StackExchange.Redis;
 
 namespace MusicManager.Controllers
@@ -508,7 +509,7 @@ namespace MusicManager.Controllers
         [HttpPost("update-personal-info")]
         public async Task<IActionResult> UpdatePersonalInfo([FromForm] UpdatePersonalInfoRequest model)
         {
-            var res = new ResponseBase();
+            var res = new ResponseData<string>();
             try
             {
                 // Lấy thông tin người dùng hiện tại
@@ -540,6 +541,7 @@ namespace MusicManager.Controllers
                 
                 if (result.Succeeded)
                 {
+                    res.data = user.ImageUrl;
                     res.message = "Cập nhật thông tin cá nhân thành công";
                     return Ok(res);
                 }
